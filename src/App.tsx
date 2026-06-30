@@ -135,6 +135,7 @@ function AppRoutes() {
 
         {/* Chat System */}
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+        <Route path="/chat/massimo" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
 
         {/* Profiles & Configurations */}

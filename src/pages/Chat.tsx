@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, MessageCircle, RefreshCw, Search, ShieldCheck, WifiOff } from 'lucide-react';
+import { ArrowLeft, Bot, MessageCircle, RefreshCw, Search, ShieldCheck, Sparkles, WifiOff } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Avatar, Badge, Button, Card } from '../components/UI';
 import {
@@ -27,12 +27,15 @@ import { uploadChatMedia } from '../lib/chat-media';
 import { createLocationNotification, createMessageNotification } from '../lib/notifications';
 import type { ChatMessage, Conversation } from '../lib/supabase/types';
 import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
+import { SmartRequestAssistant } from '../components/SmartRequestAssistant';
+import { supabase } from '../lib/supabase/client';
+import type { Category } from '../lib/supabase/types';
 
 type RealtimeHealth = 'connecting' | 'live' | 'fallback';
 
 export const Chat: React.FC = () => {
   const { id } = useParams();
-  return id ? <ChatDetail id={id} /> : <ChatList />;
+  return id === 'massimo' ? <MassimoChat /> : id ? <ChatDetail id={id} /> : <ChatList />;
 };
 
 const ChatList = () => {
@@ -106,6 +109,17 @@ const ChatList = () => {
       <main className="mx-auto max-w-4xl p-5 md:p-8">
         {error && <Notice text={error} />}
 
+        <section className="mb-7">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Assistente instaMax</p>
+          <button type="button" onClick={()=>navigateTo(navigate,APP_ROUTES.massimo)} className="flex w-full items-center gap-4 rounded-3xl border border-blue-100 bg-gradient-to-r from-blue-600 to-blue-800 p-5 text-left text-white shadow-lg shadow-blue-200 transition hover:-translate-y-0.5">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15"><Bot size={24}/></span>
+            <span className="min-w-0 flex-1"><span className="flex items-center gap-2 text-base font-black">Massimo AI <Badge variant="info">AI</Badge></span><span className="mt-1 block text-sm text-blue-100">Il tuo assistente instaMax</span></span>
+            <Sparkles size={20}/>
+          </button>
+        </section>
+
+        <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Conversazioni con utenti</p>
+
         <div className="mb-5 flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-3.5 text-zinc-400" size={17} />
@@ -141,6 +155,23 @@ const ChatList = () => {
       </main>
     </div>
   );
+};
+
+const MassimoChat = () => {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [error, setError] = useState('');
+  useEffect(() => { void (async()=>{try{const{data,error:loadError}=await supabase.from('categories').select('*').eq('active', true).order('name');if(loadError)throw loadError;setCategories((data??[]) as Category[]);}catch(err:any){setError(err.message);}})(); }, []);
+  return <div className="min-h-screen bg-zinc-50/60 pb-28">
+    <header className="border-b border-zinc-100 bg-white px-4 py-4"><div className="mx-auto flex max-w-4xl items-center gap-3"><button className="rounded-full p-2 hover:bg-zinc-100" onClick={()=>navigateTo(navigate,APP_ROUTES.chat)} aria-label="Torna ai messaggi"><ArrowLeft size={19}/></button><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white"><Bot size={21}/></span><div><h1 className="font-black">Massimo AI</h1><p className="text-xs font-semibold text-blue-600">Il tuo assistente instaMax</p></div><Badge variant="info">AI</Badge></div></header>
+    <main className="mx-auto max-w-4xl space-y-5 p-5 md:p-8">
+      <Card hoverEffect={false} className="border-blue-100 bg-blue-50"><p className="text-sm leading-relaxed text-blue-950"><b>Ciao{profile?.full_name ? ` ${profile.full_name.split(' ')[0]}` : ''}.</b> Posso spiegarti instaMax, aiutarti a completare il profilo o capire quale professionista serve. Se sei cliente, preparo anche una richiesta usando il tuo comune e la tua provincia; la pubblicherò soltanto dopo la tua conferma.</p></Card>
+      {profile?.role !== 'client' && <Card hoverEffect={false}><p className="text-sm leading-relaxed text-zinc-600">Puoi descrivermi un problema per ottenere categoria, titolo e urgenza suggeriti. Per pubblicare una richiesta devi scegliere il tipo di profilo Cliente dalla pagina Profilo.</p></Card>}
+      {error&&<Notice text={error}/>}<SmartRequestAssistant categories={categories} initialCity={profile?.city??''} initialProvince={profile?.province??''} compact/>
+      <p className="flex items-center gap-2 px-2 text-xs text-zinc-400"><ShieldCheck size={14}/> Non inviare email, telefono, documenti o indirizzi precisi. Massimo usa solo le informazioni necessarie.</p>
+    </main>
+  </div>;
 };
 
 const ChatDetail = ({ id }: { id: string }) => {
@@ -302,6 +333,7 @@ const ChatDetail = ({ id }: { id: string }) => {
   }
 
   const closed = conversation.status !== 'open';
+  const requestWorkActive = Boolean(conversation.request_id && conversation.service_requests && !['completed','cancelled'].includes(conversation.service_requests.status));
 
   return (
     <div className="flex h-[calc(100vh-5.5rem)] flex-col bg-white md:h-[calc(100vh-4rem)]">
@@ -321,7 +353,7 @@ const ChatDetail = ({ id }: { id: string }) => {
         <Badge variant={closed ? 'gray' : 'success'}>
           {conversation.status === 'archived' ? 'Archiviata' : closed ? 'Chiusa' : 'Aperta'}
         </Badge>
-        <CloseConversationButton disabled={closed} onClick={close} />
+        <CloseConversationButton disabled={closed || requestWorkActive} onClick={close} />
       </header>
 
       <div className="flex items-center justify-between gap-2 bg-emerald-50 px-4 py-2 text-[11px] font-semibold text-emerald-700">

@@ -36,7 +36,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({ request, onStatusChang
 
   if ('client_id' in request) {
     const urgencyLabels = { urgent: 'Urgente', today: 'Oggi', tomorrow: 'Entro domani', week: 'Questa settimana', not_urgent: 'Non urgente' };
-    const statusLabels = { open: 'Aperta', in_progress: 'In corso', closed: 'Chiusa', cancelled: 'Annullata' };
+    const statusLabels = { open: 'Aperta', awaiting_client_choice: 'Disponibilità ricevute', assigned: 'Assegnata', in_progress: 'In corso', awaiting_completion: 'Da confermare', completed: 'Completata', cancelled: 'Annullata' };
     const elapsed = (() => {
       const seconds = Math.max(0, Math.floor((Date.now() - new Date(request.created_at).getTime()) / 1000));
       if (seconds < 60) return 'Adesso';

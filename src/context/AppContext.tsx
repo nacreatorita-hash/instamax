@@ -207,49 +207,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return next;
     });
 
-    // Simulate auto-reply from the other user after 1.5 seconds for incredible premium interactivity!
-    setTimeout(() => {
-      const replyMessage: ChatMessage = {
-        id: `m-${Date.now() + 1}`,
-        sender: 'them',
-        text: `Grazie per avermi contattato! Ho letto il tuo messaggio: "${text.length > 30 ? text.substring(0, 30) + '...' : text}". Ti risponderò al più presto per definire i dettagli.`,
-        timestamp: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-      };
-
-      setChats(currentChats => {
-        const updated = currentChats.map(thread => {
-          if (thread.id === threadId) {
-            return {
-              ...thread,
-              lastMessage: replyMessage.text,
-              lastMessageTime: replyMessage.timestamp,
-              unreadCount: thread.unreadCount + 1,
-              messages: [...thread.messages, replyMessage]
-            };
-          }
-          return thread;
-        });
-        setStoredState('chats', updated);
-        return updated;
-      });
-
-      // Also trigger a notification
-      setNotifications(currentNotifs => {
-        const incomingThread = chats.find(c => c.id === threadId);
-        const name = incomingThread ? incomingThread.recipientName : 'Professionista';
-        const newNotif: NotificationItem = {
-          id: `n-${Date.now()}`,
-          title: `Nuovo messaggio da ${name}`,
-          description: replyMessage.text,
-          type: 'message',
-          time: 'Ora',
-          read: false
-        };
-        const nextNotifs = [newNotif, ...currentNotifs];
-        setStoredState('notifications', nextNotifs);
-        return nextNotifs;
-      });
-    }, 1500);
   };
 
   const markNotificationAsRead = (id: string) => {

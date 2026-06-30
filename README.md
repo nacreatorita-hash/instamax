@@ -6,9 +6,34 @@ Dominio pubblico previsto: `instamax.it`.
 
 Il progetto include un workflow GitHub Pages in `.github/workflows/deploy.yml` e `public/CNAME` per collegare il dominio custom.
 
-## Milestone 6 — assistente intelligente richieste con Gemini
+## Matching richieste e tariffe
 
-La home e `#/requests/new` includono una chat iniziale: l'utente descrive il problema in linguaggio naturale, instaMax prova ad analizzarlo con la Supabase Edge Function `analyze-service-request` e mostra un riepilogo modificabile prima della pubblicazione.
+La migrazione separata `supabase/20260630_matching_pricing_massimo.sql` aggiunge:
+
+- matching RLS/RPC per professionisti e aziende in base a categoria e zona operativa;
+- categorie e zone operative aziendali;
+- notifiche ai fornitori compatibili e aggiornamento Realtime del feed;
+- modalità prezzo `hourly` / `negotiable` e tariffa oraria in EUR;
+- bucket controllato `profile-avatars` per la foto profilo.
+
+La chiave Gemini resta esclusivamente nei secrets della Edge Function e non viene inclusa nel frontend.
+
+## Proposte e conclusione dei lavori
+
+Il flusso delle richieste impedisce l’assegnazione e la chiusura unilaterale:
+
+1. professionisti e aziende compatibili inviano una proposta;
+2. solo il cliente sceglie a chi affidare il lavoro;
+3. la chat privata viene collegata dopo la selezione;
+4. cliente e fornitore confermano separatamente la conclusione;
+5. la richiesta diventa `completed` soltanto dopo entrambe le conferme;
+6. il cliente può quindi recensire esclusivamente il profilo selezionato.
+
+Le operazioni sensibili passano dalle RPC `submit_request_proposal`, `select_request_professional`, `confirm_request_start`, `confirm_request_completion` e `submit_service_review`. Il frontend non può impostare direttamente assegnazione o completamento.
+
+## Assistente intelligente richieste con Gemini
+
+La conversazione `#/chat/massimo` e `#/requests/new` permettono all'utente di descrivere il problema in linguaggio naturale. instaMax prova ad analizzarlo con la Supabase Edge Function `analyze-service-request` e mostra un riepilogo modificabile prima della pubblicazione.
 
 La chiave Gemini non va mai nel frontend. Deve essere salvata solo nei secrets Supabase:
 
@@ -27,7 +52,7 @@ Se Gemini non è disponibile, il frontend usa `src/lib/smart-request-fallback.ts
 
 Flusso utente:
 
-1. Apri la home o `#/requests/new`.
+1. Accedi e apri `#/chat/massimo` oppure `#/requests/new`.
 2. Scrivi il problema, ad esempio “Si è rotto il tubo della cucina”.
 3. Premi **Trova professionista**.
 4. Controlla categoria, titolo, descrizione, urgenza, comune e provincia.

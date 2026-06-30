@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   BriefcaseBusiness,
   Building2,
+  Bot,
   CheckCircle2,
   Hammer,
   HardHat,
@@ -22,10 +23,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Button, Card } from '../components/UI';
-import { SmartRequestAssistant } from '../components/SmartRequestAssistant';
 import { CITIES } from '../data';
-import { supabase } from '../lib/supabase/client';
-import type { Category } from '../lib/supabase/types';
 import { APP_ROUTES, navigateTo } from '../lib/navigation';
 
 const mainCards = [
@@ -114,19 +112,6 @@ const accentClasses: Record<string, string> = {
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { setActiveRole } = useApp();
-  const [smartCategories, setSmartCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        const result = await supabase.from('categories').select('*').eq('active', true).order('name');
-        if (result.error) throw result.error;
-        setSmartCategories((result.data ?? []) as Category[]);
-      } catch (error) {
-        console.warn('Categorie non disponibili:', error);
-      }
-    })();
-  }, []);
 
   const go = (role: 'client' | 'professional' | 'company' | 'candidate', route: string) => {
     setActiveRole(role);
@@ -184,8 +169,12 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-[2.5rem] border border-white bg-white/80 p-3 shadow-2xl shadow-blue-950/10 backdrop-blur">
-              <SmartRequestAssistant categories={smartCategories} compact />
+            <div className="rounded-[2.5rem] border border-white bg-white/90 p-7 shadow-2xl shadow-blue-950/10 backdrop-blur md:p-9">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200"><Bot size={27}/></span>
+              <p className="mt-6 text-xs font-black uppercase tracking-[0.18em] text-blue-600">Massimo AI</p>
+              <h2 className="mt-2 text-2xl font-black">Un assistente dentro la tua area personale</h2>
+              <p className="mt-3 text-sm leading-7 text-zinc-500">Ti aiuta a capire quale professionista serve, configurare il profilo e preparare una richiesta. La pubblicazione avviene sempre dopo la tua conferma.</p>
+              <Button fullWidth className="mt-6" onClick={()=>navigateTo(navigate,APP_ROUTES.login)}>Accedi e parla con Massimo <ArrowRight size={16}/></Button>
             </div>
           </div>
         </section>

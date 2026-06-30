@@ -1,6 +1,7 @@
 // Types for HandyGo database models
 
 export type UserRole = 'client' | 'professional' | 'company' | 'candidate';
+export type PricingMode = 'hourly' | 'negotiable';
 
 export interface Profile {
   id: string;
@@ -43,6 +44,9 @@ export interface ProfessionalProfile {
   verified: boolean;
   rating: number;
   total_reviews: number;
+  pricing_mode: PricingMode;
+  hourly_rate: number | null;
+  currency: 'EUR';
   created_at?: string;
   updated_at?: string;
 }
@@ -57,6 +61,11 @@ export interface CompanyProfile {
   province: string | null;
   website: string | null;
   verified: boolean;
+  rating: number;
+  total_reviews: number;
+  pricing_mode: PricingMode;
+  hourly_rate: number | null;
+  currency: 'EUR';
   created_at?: string;
   updated_at?: string;
 }
@@ -87,7 +96,7 @@ export interface Subscription {
 }
 
 export type RequestUrgency = 'urgent' | 'today' | 'tomorrow' | 'week' | 'not_urgent';
-export type RequestStatus = 'open' | 'in_progress' | 'closed' | 'cancelled';
+export type RequestStatus = 'open' | 'awaiting_client_choice' | 'assigned' | 'in_progress' | 'awaiting_completion' | 'completed' | 'cancelled';
 
 export interface RequestMedia {
   id: string;
@@ -111,10 +120,43 @@ export interface ServiceRequest {
   urgency: RequestUrgency;
   budget: number | null;
   status: RequestStatus;
+  assigned_user_id: string | null;
+  assigned_at: string | null;
+  started_at: string | null;
+  client_start_confirmed: boolean;
+  professional_start_confirmed: boolean;
+  client_completion_confirmed: boolean;
+  professional_completion_confirmed: boolean;
+  client_completed_at: string | null;
+  professional_completed_at: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
   categories?: Pick<Category, 'id' | 'name' | 'slug' | 'icon'> | null;
   request_media?: RequestMedia[];
+}
+
+export type ProposalStatus = 'pending' | 'selected' | 'rejected' | 'withdrawn';
+export interface RequestProposal {
+  id: string;
+  request_id: string;
+  professional_user_id: string;
+  professional_role: 'professional' | 'company';
+  message: string | null;
+  proposed_availability: string | null;
+  status: ProposalStatus;
+  created_at: string;
+  updated_at: string;
+  provider_profile?: Pick<Profile, 'id'|'full_name'|'avatar_url'|'city'|'province'> | null;
+  professional_details?: Pick<ProfessionalProfile,'business_name'|'years_experience'|'verified'|'rating'|'total_reviews'|'pricing_mode'|'hourly_rate'> | null;
+  company_details?: Pick<CompanyProfile,'company_name'|'verified'|'pricing_mode'|'hourly_rate'|'rating'|'total_reviews'> | null;
+}
+
+export interface ServiceReview {
+  id: string; request_id: string; reviewer_id: string; reviewed_id: string; rating: number;
+  comment: string | null; review_type: 'service_client_to_professional'; punctuality: number | null;
+  professionalism: number | null; work_quality: number | null; price_clarity: number | null;
+  communication: number | null; created_at: string; updated_at: string;
 }
 
 export interface Notification {
@@ -133,7 +175,7 @@ export type MessageType = 'text' | 'image' | 'video' | 'file' | 'location' | 'sy
 export interface Conversation {
   id:string; request_id:string|null; job_post_id:string|null; participant_one:string; participant_two:string;
   status:ConversationStatus; last_message:string|null; last_message_at:string|null; closed_at:string|null;
-  created_at:string; updated_at:string; service_requests?:Pick<ServiceRequest,'id'|'title'>|null;
+  created_at:string; updated_at:string; service_requests?:Pick<ServiceRequest,'id'|'title'|'status'>|null;
   job_posts?:{ id:string; title:string }|null;
   other_profile?:Pick<Profile,'id'|'full_name'|'avatar_url'>|null; unread_count?:number;
 }

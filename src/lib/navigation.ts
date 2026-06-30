@@ -12,6 +12,7 @@ export const APP_ROUTES = {
   requests: '/requests',
   requestNew: '/requests/new',
   chat: '/chat',
+  massimo: '/chat/massimo',
   jobs: '/jobs',
   jobNew: '/jobs/new',
   professionals: '/professionals',

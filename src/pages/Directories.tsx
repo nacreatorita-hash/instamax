@@ -1,145 +1,37 @@
-import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
-import { Search, MapPin, AlertCircle, Sparkles } from 'lucide-react';
-import { ProfessionalCard, CandidateCard } from '../components/Cards';
-import { Card } from '../components/UI';
-import { CITIES } from '../data';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, MapPin, Search, ShieldCheck } from 'lucide-react';
+import { Avatar, Badge, Card, RatingStars } from '../components/UI';
+import { supabase } from '../lib/supabase/client';
+import type { PricingMode } from '../lib/supabase/types';
 
-// === PROFESSIONALS DIRECTORY ===
+type DirectoryProfessional = {
+  id: string; business_name: string | null; bio: string | null; verified: boolean; rating: number; total_reviews: number;
+  pricing_mode: PricingMode; hourly_rate: number | null;
+  profiles: { full_name: string; avatar_url: string | null; city: string | null; province: string | null } | null;
+  professional_categories: Array<{ categories: { name: string } | null }>;
+  service_areas: Array<{ city: string; province: string }>;
+};
+
 export const ProfessionalsDirectory: React.FC = () => {
-  const { professionals } = useApp();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCity, setSelectedCity] = useState('all');
+  const [items, setItems] = useState<DirectoryProfessional[]>([]);
+  const [query, setQuery] = useState('');
+  const [city, setCity] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const filtered = professionals.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.skills.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCity = selectedCity === 'all' || p.location === selectedCity;
-    return matchesSearch && matchesCity;
-  });
+  useEffect(() => { void (async()=>{try{const{data,error:loadError}=await supabase.from('professional_profiles').select('id,business_name,bio,verified,rating,total_reviews,pricing_mode,hourly_rate,profiles!professional_profiles_user_id_fkey(full_name,avatar_url,city,province),professional_categories(categories(name)),service_areas(city,province)');if(loadError)throw loadError;setItems((data??[]) as unknown as DirectoryProfessional[]);}catch(err:any){setError(err.message);}finally{setLoading(false);}})(); }, []);
+  const cities = useMemo(()=>Array.from(new Set(items.flatMap(item=>item.service_areas.map(area=>area.city)))).sort(),[items]);
+  const filtered = useMemo(()=>items.filter(item=>{
+    const haystack = `${item.profiles?.full_name??''} ${item.business_name??''} ${item.professional_categories.map(row=>row.categories?.name??'').join(' ')}`.toLowerCase();
+    return (!query.trim()||haystack.includes(query.trim().toLowerCase())) && (city==='all'||item.service_areas.some(area=>area.city===city));
+  }),[items,query,city]);
 
-  return (
-    <div className="select-none min-h-screen bg-zinc-50/50 pb-24 md:pb-12">
-      {/* HEADER */}
-      <div className="bg-white border-b border-zinc-100 px-6 py-5 sticky top-0 z-20">
-        <h1 className="text-xl font-extrabold text-zinc-950 tracking-tight">Cerca Professionisti & Artigiani</h1>
-        <p className="text-xs text-zinc-400 font-semibold mt-0.5">Sfoglia specialisti pronti a intervenire per le tue necessità</p>
-      </div>
-
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Filters Panel */}
-        <div className="bg-white p-4 rounded-3xl border border-zinc-100 flex flex-col md:flex-row items-center gap-3">
-          <div className="relative w-full md:flex-1">
-            <Search className="absolute left-3 top-3 text-zinc-400" size={18} />
-            <input
-              type="text"
-              placeholder="Cerca per nome, qualifica o skill (es. Idraulico, Caldaie)..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-sm bg-zinc-50 border border-zinc-100 focus:border-zinc-900 rounded-2xl focus:outline-none focus:bg-white transition-all"
-            />
-          </div>
-
-          <div className="w-full md:w-48">
-            <select
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="w-full appearance-none px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-100 focus:border-zinc-900 rounded-2xl focus:outline-none focus:bg-white font-medium cursor-pointer"
-            >
-              <option value="all">Tutte le Città</option>
-              {CITIES.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Output */}
-        {filtered.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-3xl border border-zinc-100 p-8 max-w-md mx-auto">
-            <AlertCircle size={32} className="mx-auto text-zinc-400 mb-3" />
-            <h3 className="font-bold text-zinc-900 text-sm">Nessun professionista trovato</h3>
-            <p className="text-xs text-zinc-400 mt-1">Nessun profilo soddisfa i tuoi criteri di ricerca in questo momento.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map(p => (
-              <ProfessionalCard key={p.id} professional={p} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return <div className="min-h-screen bg-zinc-50/60 pb-28"><header className="border-b border-zinc-100 bg-white px-6 py-6"><div className="mx-auto max-w-7xl"><h1 className="text-2xl font-black">Professionisti</h1><p className="mt-1 text-sm text-zinc-500">Trova profili reali e servizi disponibili nella tua zona.</p></div></header><main className="mx-auto max-w-7xl space-y-6 p-5 md:p-8">
+    <div className="grid gap-3 rounded-3xl border border-zinc-100 bg-white p-4 md:grid-cols-[1fr_240px]"><div className="relative"><Search className="absolute left-4 top-3.5 text-zinc-400" size={17}/><input className="w-full rounded-2xl bg-zinc-50 py-3 pl-11 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-100" value={query} onChange={event=>setQuery(event.target.value)} placeholder="Nome, attività o categoria"/></div><select className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm font-semibold" value={city} onChange={event=>setCity(event.target.value)}><option value="all">Tutti i comuni</option>{cities.map(value=><option key={value}>{value}</option>)}</select></div>
+    {error&&<p className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</p>}
+    {loading?<p className="py-14 text-center text-sm text-zinc-400">Caricamento professionisti…</p>:filtered.length?<div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{filtered.map(item=><Card key={item.id} className="flex h-full flex-col p-6"><div className="flex items-start justify-between"><Avatar size="lg" name={item.profiles?.full_name??'Professionista'} src={item.profiles?.avatar_url??undefined}/>{item.verified&&<Badge variant="success"><ShieldCheck size={12}/> Verificato</Badge>}</div><h2 className="mt-4 text-lg font-black">{item.business_name||item.profiles?.full_name||'Professionista instaMax'}</h2><div className="mt-2"><RatingStars rating={Number(item.rating)||0} count={item.total_reviews}/></div><div className="mt-4 flex flex-wrap gap-2">{item.professional_categories.map(row=>row.categories?.name).filter(Boolean).map(name=><Badge key={name} variant="gray">{name}</Badge>)}</div>{item.bio&&<p className="mt-4 line-clamp-3 text-sm leading-relaxed text-zinc-500">{item.bio}</p>}<div className="mt-auto pt-5"><p className="font-black text-zinc-900">{item.pricing_mode==='hourly'&&item.hourly_rate?`Da ${Number(item.hourly_rate).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})} €/ora`:'Prezzo da concordare'}</p><p className="mt-1 text-[11px] leading-relaxed text-zinc-400">La tariffa è indicativa e può variare in base al tipo di intervento.</p>{item.service_areas[0]&&<p className="mt-3 flex items-center gap-1 text-xs font-semibold text-zinc-500"><MapPin size={13}/>{item.service_areas[0].city} ({item.service_areas[0].province}){item.service_areas.length>1?` +${item.service_areas.length-1}`:''}</p>}</div></Card>)}</div>:<Card hoverEffect={false} className="py-14 text-center"><AlertCircle className="mx-auto text-zinc-300"/><h2 className="mt-3 font-black">Nessun professionista trovato</h2><p className="mt-1 text-sm text-zinc-500">Prova a modificare categoria o comune.</p></Card>}
+  </main></div>;
 };
 
-// === CANDIDATES DIRECTORY ===
-export const CandidatesDirectory: React.FC = () => {
-  const { candidates } = useApp();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCity, setSelectedCity] = useState('all');
-
-  const filtered = candidates.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          c.desiredRole.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          c.skills.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCity = selectedCity === 'all' || c.location === selectedCity;
-    return matchesSearch && matchesCity;
-  });
-
-  return (
-    <div className="select-none min-h-screen bg-zinc-50/50 pb-24 md:pb-12">
-      {/* HEADER */}
-      <div className="bg-white border-b border-zinc-100 px-6 py-5 sticky top-0 z-20">
-        <h1 className="text-xl font-extrabold text-zinc-950 tracking-tight">Cerca Candidati e Profili</h1>
-        <p className="text-xs text-zinc-400 font-semibold mt-0.5">Trova talenti eccezionali con le competenze adatte alla tua azienda</p>
-      </div>
-
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Filters */}
-        <div className="bg-white p-4 rounded-3xl border border-zinc-100 flex flex-col md:flex-row items-center gap-3">
-          <div className="relative w-full md:flex-1">
-            <Search className="absolute left-3 top-3 text-zinc-400" size={18} />
-            <input
-              type="text"
-              placeholder="Cerca per nome, ruolo desiderato o tecnologia (es. Figma, React)..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-sm bg-zinc-50 border border-zinc-100 focus:border-zinc-900 rounded-2xl focus:outline-none focus:bg-white transition-all"
-            />
-          </div>
-
-          <div className="w-full md:w-48">
-            <select
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="w-full appearance-none px-4 py-2.5 text-sm bg-zinc-50 border border-zinc-100 focus:border-zinc-900 rounded-2xl focus:outline-none focus:bg-white font-medium cursor-pointer"
-            >
-              <option value="all">Tutte le Città</option>
-              {CITIES.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Output Grid */}
-        {filtered.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-3xl border border-zinc-100 p-8 max-w-md mx-auto">
-            <AlertCircle size={32} className="mx-auto text-zinc-400 mb-3" />
-            <h3 className="font-bold text-zinc-900 text-sm">Nessun candidato trovato</h3>
-            <p className="text-xs text-zinc-400 mt-1">La ricerca non ha prodotto risultati. Modifica i parametri inseriti.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map(c => (
-              <CandidateCard key={c.id} candidate={c} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+// Kept for compatibility with older imports; the active candidate page lives in Candidates.tsx.
+export const CandidatesDirectory = () => null;

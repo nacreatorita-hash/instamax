@@ -1,5 +1,5 @@
 import { supabase } from './supabase/client';
-import type { RequestMedia, RequestStatus, ServiceRequest } from './supabase/types';
+import type { RequestMedia, ServiceRequest } from './supabase/types';
 
 export type ServiceRequestInput = Pick<ServiceRequest,
   'title' | 'description' | 'category_id' | 'city' | 'province' | 'urgency'
@@ -39,17 +39,6 @@ export async function deleteServiceRequest(id: string) {
   if (error) throw error;
 }
 
-export async function closeServiceRequest(id: string) {
-  return setRequestStatus(id, 'closed');
-}
-
-export async function setRequestStatus(id: string, status: RequestStatus) {
-  const { data, error } = await supabase.from('service_requests').update({ status })
-    .eq('id', id).select(requestSelect).single();
-  if (error) throw error;
-  return data as ServiceRequest;
-}
-
 export async function getRequestById(id: string) {
   const { data, error } = await supabase.from('service_requests').select(requestSelect).eq('id', id).maybeSingle();
   if (error) throw error;
@@ -63,11 +52,27 @@ export async function getRequestsForClient(clientId: string) {
   return (data ?? []) as ServiceRequest[];
 }
 
-export async function getCompatibleRequestsForProfessional() {
-  const { data, error } = await supabase.from('service_requests').select(requestSelect)
-    .eq('status', 'open').order('created_at', { ascending: false });
+export async function getCompatibleRequestsForProvider(userId: string) {
+  const { data, error } = await supabase
+    .rpc('get_compatible_requests_for_user', { p_user_id: userId })
+    .select(requestSelect);
   if (error) throw error;
-  return (data ?? []) as ServiceRequest[];
+  const urgencyWeight: Record<ServiceRequest['urgency'], number> = {
+    urgent: 0, today: 1, tomorrow: 2, week: 3, not_urgent: 4,
+  };
+  return ((data ?? []) as ServiceRequest[]).sort((a, b) =>
+    urgencyWeight[a.urgency] - urgencyWeight[b.urgency]
+    || new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
+export const getCompatibleRequestsForProfessional = getCompatibleRequestsForProvider;
+
+export function subscribeToCompatibleRequests(onChange: () => void) {
+  const channel = supabase.channel(`compatible-requests:${crypto.randomUUID()}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, onChange)
+    .subscribe();
+  return () => { void supabase.removeChannel(channel); };
 }
 
 export async function uploadRequestMedia(clientId: string, requestId: string, files: File[]) {

@@ -7,7 +7,7 @@ import { SmartRequestAssistant } from '../components/SmartRequestAssistant';
 import { useAuth } from '../lib/auth/useAuth';
 import { supabase } from '../lib/supabase/client';
 import type { Category, ItalianLocation, RequestStatus, RequestUrgency, ServiceRequest } from '../lib/supabase/types';
-import { createServiceRequest, getCompatibleRequestsForProfessional, getRequestsForClient, uploadRequestMedia } from '../lib/requests';
+import { createServiceRequest, getCompatibleRequestsForProvider, getRequestsForClient, subscribeToCompatibleRequests, uploadRequestMedia } from '../lib/requests';
 import { createRequestNotifications } from '../lib/notifications';
 import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
 
@@ -33,6 +33,7 @@ export const Requests: React.FC = () => {
   const [filterCity, setFilterCity] = useState('all');
   const [filterUrgency, setFilterUrgency] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [providerReady, setProviderReady] = useState<boolean | null>(null);
 
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -57,10 +58,32 @@ export const Requests: React.FC = () => {
 
   useEffect(() => {
     if (isNew || !user || !profile) { setLoading(false); return; }
-    if (!['client', 'professional'].includes(profile.role)) { setLoading(false); return; }
+    if (!['client', 'professional', 'company'].includes(profile.role)) { setLoading(false); return; }
     setLoading(true);
-    const loader = profile.role === 'client' ? getRequestsForClient(user.id) : getCompatibleRequestsForProfessional();
-    void loader.then(setRequests).catch(err => setError(err.message)).finally(() => setLoading(false));
+    const load = async () => {
+      if (profile.role === 'client') {
+        setProviderReady(null);
+        setRequests(await getRequestsForClient(user.id));
+        return;
+      }
+      const profileTable = profile.role === 'professional' ? 'professional_profiles' : 'company_profiles';
+      const categoriesTable = profile.role === 'professional' ? 'professional_categories' : 'company_categories';
+      const areasTable = profile.role === 'professional' ? 'service_areas' : 'company_service_areas';
+      const ownerColumn = profile.role === 'professional' ? 'professional_id' : 'company_id';
+      const { data: provider, error: providerError } = await supabase.from(profileTable).select('id').eq('user_id', user.id).maybeSingle();
+      if (providerError) throw providerError;
+      if (!provider) { setProviderReady(false); setRequests([]); return; }
+      const [categoryResult, areaResult] = await Promise.all([
+        supabase.from(categoriesTable).select('id', { count: 'exact', head: true }).eq(ownerColumn, provider.id),
+        supabase.from(areasTable).select('id', { count: 'exact', head: true }).eq(ownerColumn, provider.id),
+      ]);
+      if (categoryResult.error) throw categoryResult.error;
+      if (areaResult.error) throw areaResult.error;
+      setProviderReady(Boolean(categoryResult.count && areaResult.count));
+      setRequests(await getCompatibleRequestsForProvider(user.id));
+    };
+    void load().catch(err => setError(err.message)).finally(() => setLoading(false));
+    if (profile.role !== 'client') return subscribeToCompatibleRequests(() => void load().catch(err => setError(err.message)));
   }, [isNew, user, profile]);
 
   const filtered = useMemo(() => requests.filter(item => {
@@ -131,7 +154,7 @@ export const Requests: React.FC = () => {
           <div className="h-px flex-1 bg-zinc-200" />
         </div>
         <Card hoverEffect={false} className="p-5 md:p-8"><form onSubmit={publish} className="space-y-5">
-          {error && <Notice kind="error" text={error}/>} {success && <Notice kind="success" text={success}/>} 
+          {error && <Notice kind="error" text={error}/>} {success && <Notice kind="success" text={success}/>}
           <Input label="Titolo richiesta *" value={title} onChange={e=>setTitle(e.target.value)} maxLength={100} placeholder="Es. Cerco idraulico per perdita in cucina"/>
           <div className="grid gap-4 sm:grid-cols-2">
             <Select label="Categoria *" value={categoryId} onChange={e=>setCategoryId(e.target.value)} options={[{value:'',label:'Seleziona una categoria'},...categories.map(c=>({value:c.id,label:c.name}))]}/>
@@ -148,15 +171,15 @@ export const Requests: React.FC = () => {
     </div>;
   }
 
-  if (!profile || !['client','professional'].includes(profile.role)) return <RoleUnavailable text="Le richieste operative sono disponibili per clienti e professionisti." />;
+  if (!profile || !['client','professional','company'].includes(profile.role)) return <RoleUnavailable text="Le richieste operative sono disponibili per clienti, professionisti e aziende." />;
 
   return <div className="min-h-screen bg-zinc-50/60 pb-28">
     <header className="border-b border-zinc-100 bg-white px-5 py-6"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><h1 className="text-2xl font-black text-zinc-950">{profile.role === 'client' ? 'Le mie richieste' : 'Lavori compatibili'}</h1><p className="mt-1 text-sm text-zinc-500">{profile.role === 'client' ? 'Gestisci gli interventi che hai pubblicato.' : 'Solo richieste aperte nelle tue categorie e zone operative.'}</p></div>{profile.role === 'client' && <Button onClick={()=>navigateTo(navigate, APP_ROUTES.requestNew)}><Plus size={16}/> Nuova richiesta</Button>}</div></header>
     <main className="mx-auto max-w-7xl space-y-6 p-5 md:p-8">
-      {error && <Notice kind="error" text={error}/>} 
+      {error && <Notice kind="error" text={error}/>}
       <div className="grid gap-3 rounded-3xl border border-zinc-100 bg-white p-4 md:grid-cols-5"><div className="relative md:col-span-2"><Search className="absolute left-3 top-3.5 text-zinc-400" size={16}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cerca nel titolo o descrizione" className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-blue-500"/></div><FilterSelect value={filterCategory} onChange={setFilterCategory} options={[['all','Tutte le categorie'],...categories.map(c=>[c.id,c.name])] as string[][]}/><FilterSelect value={filterCity} onChange={setFilterCity} options={[['all','Tutti i comuni'],...Array.from(new Set<string>(requests.map(r=>r.city))).map(city=>[city,city])] as string[][]}/><FilterSelect value={filterUrgency} onChange={setFilterUrgency} options={[['all','Tutte le urgenze'],...urgencyOptions.map(o=>[o.value,o.label])] as string[][]}/></div>
-      {profile.role === 'client' && <div className="max-w-xs"><FilterSelect value={filterStatus} onChange={setFilterStatus} options={[['all','Tutti gli stati'],['open','Aperte'],['in_progress','In corso'],['closed','Chiuse'],['cancelled','Annullate']]}/></div>}
-      {loading ? <div className="py-20 text-center text-sm font-semibold text-zinc-400">Caricamento richieste…</div> : filtered.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{filtered.map(item=><RequestCard key={item.id} request={item}/>)}</div> : <EmptyState professional={profile.role==='professional'} onCreate={()=>navigateTo(navigate, APP_ROUTES.requestNew)}/>} 
+      {profile.role === 'client' && <div className="max-w-xs"><FilterSelect value={filterStatus} onChange={setFilterStatus} options={[['all','Tutti gli stati'],['open','Aperte'],['awaiting_client_choice','Da assegnare'],['assigned','Assegnate'],['in_progress','In corso'],['awaiting_completion','Da confermare'],['completed','Completate'],['cancelled','Annullate']]}/></div>}
+      {loading ? <div className="py-20 text-center text-sm font-semibold text-zinc-400">Caricamento richieste…</div> : filtered.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{filtered.map(item=><RequestCard key={item.id} request={item}/>)}</div> : <EmptyState provider={profile.role!=='client'} profileComplete={providerReady !== false} onCreate={()=>navigateTo(navigate, APP_ROUTES.requestNew)} onProfile={()=>navigateTo(navigate, APP_ROUTES.profile)}/>}
     </main>
   </div>;
 };
@@ -164,4 +187,4 @@ export const Requests: React.FC = () => {
 const Notice = ({kind,text}:{kind:'error'|'success';text:string}) => <div className={`rounded-2xl border p-4 text-sm font-semibold ${kind==='error'?'border-red-100 bg-red-50 text-red-700':'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>{text}</div>;
 const FilterSelect = ({value,onChange,options}:{value:string;onChange:(v:string)=>void;options:string[][]}) => <select value={value} onChange={e=>onChange(e.target.value)} className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-3 py-3 text-sm font-semibold text-zinc-700 outline-none focus:border-blue-500">{options.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>;
 const RoleUnavailable = ({text}:{text:string}) => <div className="flex min-h-[70vh] items-center justify-center p-6"><Card className="max-w-md text-center"><ShieldCheck className="mx-auto text-blue-600" size={34}/><h1 className="mt-4 text-lg font-black">Funzione non disponibile</h1><p className="mt-2 text-sm leading-relaxed text-zinc-500">{text}</p></Card></div>;
-const EmptyState = ({professional,onCreate}:{professional:boolean;onCreate:()=>void}) => <Card className="mx-auto max-w-lg border-dashed py-14 text-center" hoverEffect={false}><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"><Search size={25}/></div><h2 className="mt-4 text-lg font-black text-zinc-950">{professional?'Nessuna richiesta compatibile nella tua zona':'Nessuna richiesta pubblicata'}</h2><p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">{professional?'Completa categorie, comuni e disponibilità nel profilo per ricevere nuove opportunità.':'Quando avrai bisogno di un professionista, pubblica qui la tua prima richiesta.'}</p>{!professional&&<Button className="mt-5" onClick={onCreate}><Plus size={16}/> Pubblica la prima richiesta</Button>}</Card>;
+const EmptyState = ({provider,profileComplete,onCreate,onProfile}:{provider:boolean;profileComplete:boolean;onCreate:()=>void;onProfile:()=>void}) => <Card className="mx-auto max-w-lg border-dashed py-14 text-center" hoverEffect={false}><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"><Search size={25}/></div><h2 className="mt-4 text-lg font-black text-zinc-950">{provider?(profileComplete?'Nessuna nuova richiesta compatibile':'Completa il tuo profilo professionale'):'Nessuna richiesta pubblicata'}</h2><p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">{provider?(profileComplete?'Al momento non ci sono nuove richieste compatibili nella tua zona.':'Completa categorie e zone operative per visualizzare le richieste compatibili.'):'Quando avrai bisogno di un professionista, pubblica qui la tua prima richiesta.'}</p>{provider&&!profileComplete?<Button className="mt-5" onClick={onProfile}>Completa il profilo</Button>:!provider&&<Button className="mt-5" onClick={onCreate}><Plus size={16}/> Pubblica la prima richiesta</Button>}</Card>;

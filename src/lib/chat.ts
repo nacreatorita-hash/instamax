@@ -2,7 +2,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from './supabase/client';
 import type { ChatMessage, Conversation, MessageType } from './supabase/types';
 
-const conversationSelect = '*, service_requests(id,title), job_posts(id,title)';
+const conversationSelect = '*, service_requests(id,title,status), job_posts(id,title)';
 
 type RealtimeStatus = 'SUBSCRIBED' | 'CHANNEL_ERROR' | 'TIMED_OUT' | 'CLOSED';
 

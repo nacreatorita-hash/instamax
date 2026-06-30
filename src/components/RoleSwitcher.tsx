@@ -26,6 +26,8 @@ export const RoleSwitcher: React.FC = () => {
   if (!profile) return null;
   const submit = async () => {
     if (selected === profile.role) return setMessage('Questo è già il tuo ruolo attivo.');
+    const nextLabel = roles.find(item => item.value === selected)?.label ?? selected;
+    if (!window.confirm(`Vuoi cambiare il tipo di profilo in ${nextLabel}? Le sezioni disponibili cambieranno, ma i dati già presenti non saranno eliminati.`)) return;
     setLoading(true); setError(''); setMessage('');
     try {
       const updated = await changeMyRole(selected);
@@ -37,7 +39,7 @@ export const RoleSwitcher: React.FC = () => {
   };
 
   return <Card hoverEffect={false} className="p-6 md:p-8">
-    <div className="mb-5"><h2 className="text-lg font-black text-zinc-950">Come vuoi usare instaMax?</h2><p className="mt-1 text-sm leading-relaxed text-zinc-500">Puoi cambiare area in qualsiasi momento. I dati già pubblicati non vengono eliminati.</p></div>
+    <div className="mb-5"><h2 className="text-lg font-black text-zinc-950">Tipo di profilo</h2><p className="mt-1 text-sm leading-relaxed text-zinc-500">Puoi modificare il tipo di profilo. Alcune sezioni disponibili cambieranno in base alla scelta; i dati già presenti non vengono eliminati.</p></div>
     {error&&<div className="mb-4 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
     {message&&<div className="mb-4 rounded-2xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">{message}</div>}
     <div className="grid gap-3 sm:grid-cols-2">{roles.map(role=>{const active=selected===role.value;return <button type="button" key={role.value} onClick={()=>setSelected(role.value)} className={`flex items-start gap-3 rounded-3xl border p-4 text-left transition ${active?'border-blue-500 bg-blue-50 ring-2 ring-blue-100':'border-zinc-100 bg-white hover:border-blue-200'}`}><span className={`rounded-2xl p-2.5 ${active?'bg-blue-600 text-white':'bg-zinc-100 text-zinc-600'}`}>{role.icon}</span><span><span className="block text-sm font-black text-zinc-900">{role.label}{profile.role===role.value&&<span className="ml-2 text-[10px] uppercase tracking-wider text-blue-600">Attivo</span>}</span><span className="mt-1 block text-xs leading-relaxed text-zinc-500">{role.description}</span></span></button>;})}</div>

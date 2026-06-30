@@ -13,7 +13,6 @@ import {
   Users,
   Compass
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
 import { Avatar, Badge } from './UI';
 import { useAuth } from '../lib/auth/useAuth';
 import { getRedirectPath } from '../lib/auth/roleRedirect';
@@ -157,10 +156,8 @@ export const BottomNavigation: React.FC = () => {
 
 // === SIDEBAR (DESKTOP GRID) ===
 export const Sidebar: React.FC = () => {
-  const { activeRole, setActiveRole, profiles } = useApp();
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const currentProfile = profiles[activeRole];
   const homePath = profile ? getRedirectPath(profile.role) : buildAppRoute(APP_ROUTES.home);
 
   const handleLogout = async () => {
@@ -201,41 +198,23 @@ export const Sidebar: React.FC = () => {
         <span className="text-xl font-bold tracking-tight text-gray-900 italic">instaMax</span>
       </div>
 
-      {/* User profile capsule with quick switcher */}
-      <div className="mb-6 p-4 rounded-3xl bg-zinc-50 border border-zinc-100 flex flex-col gap-3">
+      {/* Real authenticated profile. Role changes are available only in Profile. */}
+      <button type="button" onClick={() => navigateTo(navigate, APP_ROUTES.profile)} className="mb-6 p-4 rounded-3xl bg-zinc-50 border border-zinc-100 flex flex-col gap-3 text-left hover:border-blue-200 transition">
         <div className="flex items-center gap-3">
-          <Avatar src={currentProfile.avatar} name={currentProfile.name} size="sm" />
+          <Avatar src={profile?.avatar_url ?? undefined} name={profile?.full_name ?? 'Completa il tuo profilo'} size="sm" />
           <div className="min-w-0">
-            <p className="text-xs font-bold text-zinc-900 truncate">{currentProfile.name}</p>
-            <p className="text-[10px] text-zinc-400 truncate mt-0.5">{currentProfile.email}</p>
+            <p className="text-xs font-bold text-zinc-900 truncate">{profile?.full_name || 'Completa il tuo profilo'}</p>
+            {profile?.email && <p className="text-[10px] text-zinc-400 truncate mt-0.5">{profile.email}</p>}
           </div>
         </div>
 
-        {/* Dynamic Badge indicating active role */}
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Ruolo Attivo</span>
-          <div className={`text-center py-1.5 px-3 rounded-full text-[11px] font-bold border ${roleLabels[activeRole].color}`}>
-            {roleLabels[activeRole].label}
+          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Ruolo</span>
+          <div className={`text-center py-1.5 px-3 rounded-full text-[11px] font-bold border ${roleLabels[profile?.role ?? 'client'].color}`}>
+            {roleLabels[profile?.role ?? 'client'].label}
           </div>
         </div>
-
-        <div className="mt-1">
-          <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block mb-1">Profilo attivo</label>
-          <select 
-            value={activeRole} 
-            onChange={(e) => {
-              setActiveRole(e.target.value as any);
-              navigateTo(navigate, APP_ROUTES.dashboard);
-            }}
-            className="w-full text-xs bg-white border border-zinc-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-blue-600 cursor-pointer font-semibold"
-          >
-            <option value="client">Cliente</option>
-            <option value="professional">Professionista</option>
-            <option value="company">Azienda</option>
-            <option value="candidate">Candidato</option>
-          </select>
-        </div>
-      </div>
+      </button>
 
       {/* Nav Menu */}
       <nav className="flex-1 flex flex-col gap-1">
@@ -258,7 +237,7 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* Footer log out (simulated) */}
+      {/* Logout */}
       <div className="pt-4 border-t border-zinc-50 mt-4">
         <button 
           onClick={() => void handleLogout()}

@@ -10,7 +10,7 @@ import { Button, Input, Select, Textarea, Card } from '../components/UI';
 export const Auth: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setActiveRole, updateProfile: syncAppProfile } = useApp();
+  const { setActiveRole } = useApp();
   const { user, profile, loading: authLoading, signIn, signUp, signInWithGoogle } = useAuth();
 
   const isLogin = location.pathname === '/login';
@@ -91,15 +91,7 @@ export const Auth: React.FC = () => {
           ? 'Registrazione completata! Accesso in corso…'
           : 'Account creato. Controlla la tua email per confermare la registrazione.');
         
-        // Keep the local profile state aligned
         setActiveRole(role);
-        syncAppProfile(role, {
-          name: name,
-          email: email,
-          phone: phone || '+39 333 000 0000',
-          bio: bio || 'Nuovo utente registrato su instaMax.',
-          location: city ? `${city} (${province})` : 'Salerno'
-        });
 
         if (result.session) {
           setTimeout(() => navigateTo(navigate, getRedirectPath(role)), 1200);

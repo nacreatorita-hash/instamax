@@ -14,43 +14,25 @@ import {
   HelpCircle,
   LogOut,
   CreditCard
+  ,Camera
 } from 'lucide-react';
 import { Button, Input, Select, Textarea, Card, Avatar, Badge } from '../components/UI';
 import { ProfessionalSetup } from '../components/ProfessionalSetup';
 import { RoleSwitcher } from '../components/RoleSwitcher';
 import { CandidateSetup } from '../components/CandidateSetup';
+import { CompanySetup } from '../components/CompanySetup';
+import { PricingSettings } from '../components/PricingSettings';
 import { APP_ROUTES, navigateTo } from '../lib/navigation';
+import { supabase } from '../lib/supabase/client';
 
 // === USER PROFILE VIEW ===
 export const Profile: React.FC = () => {
   const { user, profile, updateUserProfile } = useAuth();
-  const { activeRole, profiles, updateProfile: syncAppProfile } = useApp();
+  const { activeRole, updateProfile: syncAppProfile } = useApp();
   
-  // Fallback profile used while account data is loading
-  const currentProfile = profile ? {
-    name: profile.full_name,
-    email: profile.email,
-    phone: profile.phone || '',
-    location: profile.city && profile.province ? `${profile.city} (${profile.province})` : '',
-    city: profile.city || '',
-    province: profile.province || '',
-    bio: '',
-    avatar: profile.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
-    skills: [] as string[],
-    hourlyRate: undefined as number | undefined,
-    companyName: ''
-  } : {
-    name: profiles[activeRole]?.name || 'Utente Ospite',
-    email: profiles[activeRole]?.email || 'ospite@instamax.it',
-    phone: profiles[activeRole]?.phone || '',
-    location: profiles[activeRole]?.location || 'Salerno',
-    city: profiles[activeRole]?.location?.split('(')[0]?.trim() || 'Salerno',
-    province: 'SA',
-    bio: profiles[activeRole]?.bio || '',
-    avatar: profiles[activeRole]?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
-    skills: profiles[activeRole]?.skills || [],
-    hourlyRate: profiles[activeRole]?.hourlyRate,
-    companyName: profiles[activeRole]?.companyName || ''
+  const currentProfile = {
+    name: profile?.full_name ?? '', email: profile?.email ?? user?.email ?? '', phone: profile?.phone ?? '',
+    city: profile?.city ?? '', province: profile?.province ?? '', avatar: profile?.avatar_url ?? '',
   };
 
   const [name, setName] = useState(currentProfile.name);
@@ -59,13 +41,8 @@ export const Profile: React.FC = () => {
   const [city, setCity] = useState(currentProfile.city);
   const [province, setProvince] = useState(currentProfile.province);
   const [avatarUrl, setAvatarUrl] = useState(currentProfile.avatar);
-  const [bio, setBio] = useState(currentProfile.bio);
-  
-  const [skillsStr, setSkillsStr] = useState(currentProfile.skills ? currentProfile.skills.join(', ') : '');
-  const [hourlyRate, setHourlyRate] = useState(currentProfile.hourlyRate ? currentProfile.hourlyRate.toString() : '');
-  const [companyName, setCompanyName] = useState(currentProfile.companyName || '');
-
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -77,7 +54,7 @@ export const Profile: React.FC = () => {
       setPhone(profile.phone || '');
       setCity(profile.city || '');
       setProvince(profile.province || '');
-      setAvatarUrl(profile.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80');
+      setAvatarUrl(profile.avatar_url || '');
     }
   }, [profile]);
 
@@ -106,22 +83,6 @@ export const Profile: React.FC = () => {
           location: city ? `${city} (${province})` : '',
           avatar: avatarUrl
         });
-      } else {
-        // Local profile update while account data is loading
-        const skills = skillsStr ? skillsStr.split(',').map(s => s.trim()).filter(s => s !== '') : undefined;
-        const rate = hourlyRate ? parseFloat(hourlyRate) : undefined;
-
-        syncAppProfile(activeRole, {
-          name,
-          email,
-          phone,
-          bio,
-          location: city ? `${city} (${province})` : 'Salerno',
-          skills,
-          hourlyRate: rate,
-          companyName: companyName || undefined,
-          avatar: avatarUrl
-        });
       }
 
       setSaved(true);
@@ -134,13 +95,32 @@ export const Profile: React.FC = () => {
     }
   };
 
+  const uploadAvatar = async (file: File) => {
+    if (!user || !profile) return;
+    if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setErrorMsg('Carica un’immagine JPG, PNG o WebP di massimo 5 MB.'); return;
+    }
+    setUploadingAvatar(true); setErrorMsg(null);
+    try {
+      const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+      const path = `${user.id}/avatar.${extension}`;
+      const { error: uploadError } = await supabase.storage.from('profile-avatars').upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+      const publicUrl = supabase.storage.from('profile-avatars').getPublicUrl(path).data.publicUrl;
+      await updateUserProfile({ avatar_url: `${publicUrl}?v=${Date.now()}` });
+      setAvatarUrl(`${publicUrl}?v=${Date.now()}`);
+      setSaved(true);
+    } catch (err: any) { setErrorMsg(err.message || 'Caricamento foto non riuscito.'); }
+    finally { setUploadingAvatar(false); }
+  };
+
   return (
     <div className="select-none min-h-screen bg-transparent pb-24 md:pb-12">
       {/* HEADER */}
       <div className="bg-white border-b border-zinc-100 px-6 py-5 sticky top-0 z-20 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-extrabold text-zinc-950 tracking-tight font-display">Il mio profilo</h1>
-          <p className="text-xs text-zinc-400 font-semibold mt-0.5">Gestisci le informazioni del tuo profilo attivo</p>
+          <p className="text-xs text-zinc-400 font-semibold mt-0.5">Gestisci le informazioni del tuo account</p>
         </div>
         {saved && (
           <span className="bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-100 flex items-center gap-1.5 animate-fade-in">
@@ -232,63 +212,14 @@ export const Profile: React.FC = () => {
               </div>
             </div>
 
-            <Input
-              label="URL Avatar (Link Immagine)"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="Inserisci link URL immagine"
-              disabled={loading}
-            />
-
-            {!profile && activeRole === 'company' && (
-              <Input
-                label="Nome dell'Azienda"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                disabled={loading}
-              />
-            )}
-
-            {!profile && activeRole === 'professional' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-50/50 p-4 rounded-2xl border border-zinc-100/50">
-                <Input
-                  label="Tariffa Oraria Media (€/h)"
-                  value={hourlyRate}
-                  onChange={(e) => setHourlyRate(e.target.value)}
-                  type="number"
-                  disabled={loading}
-                />
-                <Input
-                  label="Le tue specializzazioni (Separate da virgola)"
-                  value={skillsStr}
-                  onChange={(e) => setSkillsStr(e.target.value)}
-                  placeholder="es. Idraulico, Caldaie, Climatizzatori"
-                  disabled={loading}
-                />
-              </div>
-            )}
-
-            {!profile && activeRole === 'candidate' && (
-              <div className="bg-zinc-50/50 p-4 rounded-2xl border border-zinc-100/50">
-                <Input
-                  label="Competenze Tecniche (Separate da virgola)"
-                  value={skillsStr}
-                  onChange={(e) => setSkillsStr(e.target.value)}
-                  placeholder="es. React, Figma, Tailwind, Copywriting"
-                  disabled={loading}
-                />
-              </div>
-            )}
-
-            {!profile && (
-              <Textarea
-                label="Biografia / Presentazione pubblica"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                required
-                disabled={loading}
-              />
-            )}
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">Foto profilo</p>
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-sm font-bold text-zinc-700 transition hover:border-blue-400 hover:bg-blue-50">
+                <Camera size={18}/>{uploadingAvatar?'Caricamento…':'Carica foto'}
+                <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingAvatar} onChange={event=>{const file=event.target.files?.[0];if(file)void uploadAvatar(file);}}/>
+              </label>
+              <p className="mt-2 text-xs text-zinc-400">JPG, PNG o WebP, massimo 5 MB.</p>
+            </div>
 
             <div className="pt-4 border-t border-zinc-100 flex justify-end">
               <Button type="submit" variant="primary" className="font-bold py-3 flex items-center gap-2" disabled={loading}>
@@ -299,6 +230,8 @@ export const Profile: React.FC = () => {
           </form>
         </Card>
         {profile?.role === 'professional' && user && <ProfessionalSetup userId={user.id} />}
+        {profile?.role === 'company' && user && <CompanySetup userId={user.id} />}
+        {(profile?.role === 'professional' || profile?.role === 'company') && user && <PricingSettings userId={user.id} role={profile.role} />}
         {profile?.role === 'candidate' && user && <CandidateSetup userId={user.id} />}
       </div>
     </div>
