@@ -74,6 +74,27 @@ npm run dev
 
 L'app usa le variabili `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` in `.env.local`. Sono supportati anche i prefissi `NEXT_PUBLIC_`.
 
+## Deploy GitHub Pages
+
+In locale l'app legge Supabase da `.env.local`, ma GitHub Pages non carica questo file. Per il deploy bisogna quindi creare due Repository Secrets su GitHub:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+Percorso GitHub:
+
+`Repository -> Settings -> Secrets and variables -> Actions -> New repository secret`
+
+Il workflow `.github/workflows/deploy.yml` passa questi Secrets a `npm run build` tramite variabili d'ambiente:
+
+```yaml
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+```
+
+Non inserire mai le chiavi Supabase direttamente nel codice. Dopo aver creato o aggiornato i Secrets, rilancia il workflow GitHub Pages oppure fai un nuovo push su `main`.
+
 ## Configurazione Supabase
 
 Su un progetto nuovo esegui nel SQL Editor, in ordine:
