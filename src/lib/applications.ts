@@ -1,0 +1,6 @@
+import{ supabase }from'./supabase/client';
+export async function applyToJob(jobId:string,candidateId:string,message:string){if(message.length>1000)throw new Error('Massimo 1000 caratteri.');const{data,error}=await supabase.from('job_applications').insert({job_id:jobId,candidate_id:candidateId,status:'sent',message,cover_letter:message}).select().single();if(error)throw error;return data;}
+export async function getApplicationsForJob(jobId:string){const{data,error}=await supabase.from('job_applications').select('*,candidate_profiles(*)').eq('job_id',jobId).order('created_at',{ascending:false});if(error)throw error;return data??[];}
+export async function getApplicationsForCandidate(candidateId:string){const{data,error}=await supabase.from('job_applications').select('*,job_posts(*)').eq('candidate_id',candidateId);if(error)throw error;return data??[];}
+export async function updateApplicationStatus(id:string,status:string){const{data,error}=await supabase.from('job_applications').update({status}).eq('id',id).select().single();if(error)throw error;return data;}
+export async function hasCandidateApplied(jobId:string,candidateId:string){const{data,error}=await supabase.from('job_applications').select('id').eq('job_id',jobId).eq('candidate_id',candidateId).maybeSingle();if(error)throw error;return Boolean(data);}

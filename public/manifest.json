@@ -1,0 +1,13 @@
+{
+  "name": "instaMax",
+  "short_name": "instaMax",
+  "description": "Marketplace on-demand per professionisti, aziende, candidati e clienti in tutta Italia.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "lang": "it",
+  "categories": ["business", "productivity", "utilities"]
+}
