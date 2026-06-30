@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Bot, MessageCircle, RefreshCw, Search, ShieldCheck, Sparkles, WifiOff } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Avatar, Badge, Button, Card } from '../components/UI';
 import {
   ChatInput,
@@ -35,7 +35,8 @@ type RealtimeHealth = 'connecting' | 'live' | 'fallback';
 
 export const Chat: React.FC = () => {
   const { id } = useParams();
-  return id === 'massimo' ? <MassimoChat /> : id ? <ChatDetail id={id} /> : <ChatList />;
+  const location = useLocation();
+  return location.pathname === APP_ROUTES.massimo ? <MassimoChat /> : id ? <ChatDetail id={id} /> : <ChatList />;
 };
 
 const ChatList = () => {
