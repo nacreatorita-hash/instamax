@@ -361,8 +361,8 @@ export const LandingPage: React.FC = () => {
           <div>
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Informazioni</h3>
             <div className="mt-4 flex flex-col gap-3 text-sm font-bold text-zinc-700">
-              <span>Privacy</span>
-              <span>Termini</span>
+              <a href="/privacy.html" className="hover:text-blue-600">Privacy</a>
+              <a href="/terms.html" className="hover:text-blue-600">Termini</a>
             </div>
           </div>
         </div>

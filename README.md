@@ -127,6 +127,16 @@ La quarta migrazione aggiorna `service_requests`, crea `request_media`, il bucke
 
 Abilita Google in Authentication → Providers. In Google Cloud usa come callback `https://<project-ref>.supabase.co/auth/v1/callback`. In Supabase aggiungi gli URL locali e pubblici consentiti. instaMax usa PKCE per evitare conflitti con le rotte hash.
 
+Per mostrare il brand pubblico corretto nella schermata Google, configura in Google Cloud → OAuth consent screen:
+
+- App name: `instaMax`
+- Application home page: `https://instamax.it`
+- Privacy policy: `https://instamax.it/privacy.html`
+- Terms of service: `https://instamax.it/terms.html`
+- Authorized domain: `instamax.it`
+
+Nota: se il callback OAuth resta quello Supabase (`https://<project-ref>.supabase.co/auth/v1/callback`), Google o Supabase possono ancora mostrare il dominio tecnico del progetto in alcuni passaggi di sicurezza. Per eliminarlo completamente serve configurare un dominio custom Supabase/Auth, ad esempio `auth.instamax.it`, e aggiornare poi il redirect URI del client Google.
+
 ## Test Milestone 3
 
 ### Cliente
