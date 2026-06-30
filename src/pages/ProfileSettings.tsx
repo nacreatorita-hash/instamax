@@ -10,8 +10,6 @@ import {
   Phone, 
   Mail, 
   ShieldAlert, 
-  Database, 
-  Key, 
   BellRing,
   HelpCircle,
   LogOut,
@@ -28,7 +26,7 @@ export const Profile: React.FC = () => {
   const { user, profile, updateUserProfile } = useAuth();
   const { activeRole, profiles, updateProfile: syncAppProfile } = useApp();
   
-  // Fallback to offline / Milestone 1 profile if Supabase is not connected/signed in
+  // Fallback profile used while account data is loading
   const currentProfile = profile ? {
     name: profile.full_name,
     email: profile.email,
@@ -91,7 +89,7 @@ export const Profile: React.FC = () => {
     
     try {
       if (user && profile) {
-        // Save to Supabase real Database
+        // Save account profile
         await updateUserProfile({
           full_name: name,
           phone: phone || null,
@@ -109,7 +107,7 @@ export const Profile: React.FC = () => {
           avatar: avatarUrl
         });
       } else {
-        // Fallback for demo sandbox mode
+        // Local profile update while account data is loading
         const skills = skillsStr ? skillsStr.split(',').map(s => s.trim()).filter(s => s !== '') : undefined;
         const rate = hourlyRate ? parseFloat(hourlyRate) : undefined;
 
@@ -362,7 +360,7 @@ export const Settings: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-zinc-50">
               <span className="font-semibold text-zinc-500">Stato Autenticazione</span>
               <span className={`font-bold text-xs px-2.5 py-1 rounded-full ${user ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                {user ? 'Collegato con Supabase' : 'Sessione Locale Demo'}
+                {user ? 'Account attivo' : 'Accesso richiesto'}
               </span>
             </div>
 
@@ -453,23 +451,23 @@ export const Settings: React.FC = () => {
           </div>
         </Card>
 
-        {/* Database & Supabase Architecture Status */}
+        {/* Account safety */}
         <Card className="p-6 border border-zinc-100/80 bg-white space-y-4">
           <h3 className="text-sm font-extrabold text-zinc-950 uppercase tracking-wider flex items-center gap-2 border-b border-zinc-100 pb-3 font-display">
-            <Database size={18} className="text-emerald-600" /> Architettura del Database Supabase (Attiva)
+            <ShieldAlert size={18} className="text-emerald-600" /> Sicurezza dell'account
           </h3>
 
           <p className="text-xs text-zinc-500 leading-relaxed font-medium">
-            L'integrazione di <strong>Supabase (PostgreSQL)</strong> è attiva! Il sistema gestisce in tempo reale le politiche di sicurezza <strong>Row Level Security (RLS)</strong>, la crittografia delle credenziali utenti ed i profili separati per cliente, professionista, azienda e candidato.
+            instaMax protegge profilo, conversazioni e informazioni condivise. I dati personali vengono mostrati solo quando servono per gestire richieste, candidature e contatti.
           </p>
 
           <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 flex flex-col gap-2">
             <div className="flex items-start gap-2.5 text-xs text-zinc-700">
-              <Key size={14} className="text-zinc-400 mt-0.5" />
+              <ShieldAlert size={14} className="text-zinc-400 mt-0.5" />
               <div>
-                <p className="font-bold text-zinc-800">Controllo d'accesso granulare</p>
+                <p className="font-bold text-zinc-800">Controllo dei dati condivisi</p>
                 <p className="text-[11px] text-zinc-400 mt-0.5">
-                  I profili professionali, aziendali e di candidatura sono legati ad una policy RLS che ne limita la scrittura al solo proprietario del record, garantendo riservatezza assoluta.
+                  Comune e provincia aiutano a trovare contatti nella tua zona. Indirizzo preciso, telefono e allegati restano gestiti in modo riservato nell'area personale.
                 </p>
               </div>
             </div>

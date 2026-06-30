@@ -69,7 +69,7 @@ export const Auth: React.FC = () => {
 
     try {
       if (isLogin) {
-        // Authenticate user via Supabase
+        // Authenticate user
         const result = await signIn(email, password);
         setSuccessMsg('Accesso effettuato con successo!');
         
@@ -85,13 +85,13 @@ export const Auth: React.FC = () => {
           navigateTo(navigate, getRedirectPath(userProfile));
         }, 1000);
       } else {
-        // Sign up via Supabase
+        // Sign up user
         const result = await signUp(email, password, name, role);
         setSuccessMsg(result.session
           ? 'Registrazione completata! Accesso in corso…'
           : 'Account creato. Controlla la tua email per confermare la registrazione.');
         
-        // Sync app profile for backward compatibility with Milestone 1 state
+        // Keep the local profile state aligned
         setActiveRole(role);
         syncAppProfile(role, {
           name: name,
@@ -144,7 +144,7 @@ export const Auth: React.FC = () => {
           {isLogin ? 'Accedi al tuo account' : 'Crea il tuo profilo gratuito'}
         </h2>
         <p className="mt-2 text-center text-xs font-semibold text-zinc-400 uppercase tracking-widest">
-          Milestone 2 • Collegamento Supabase
+          Accedi alla tua area personale
         </p>
       </div>
 

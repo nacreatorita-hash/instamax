@@ -56,11 +56,11 @@ export const Dashboard: React.FC = () => {
             Benvenuto, {profile?.full_name ?? currentProfile.name}
           </h1>
           <p className="text-xs text-zinc-400 font-semibold mt-0.5">
-            Pannello di Controllo • {activeRole === 'client' ? 'Cliente' : activeRole === 'professional' ? 'Professionista' : activeRole === 'company' ? 'Azienda' : 'Candidato'}
+            Area personale • {activeRole === 'client' ? 'Cliente' : activeRole === 'professional' ? 'Professionista' : activeRole === 'company' ? 'Azienda' : 'Candidato'}
           </p>
         </div>
 
-        <Badge variant="info">Milestone 3</Badge>
+        <Badge variant="info">Profilo attivo</Badge>
       </div>
 
       <div className="p-6 max-w-7xl mx-auto space-y-8">

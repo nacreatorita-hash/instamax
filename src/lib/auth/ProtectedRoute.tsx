@@ -51,7 +51,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <div className="max-w-md rounded-3xl border border-amber-100 bg-white p-8 text-center shadow-xl">
           <h1 className="text-xl font-bold text-zinc-900">Profilo non disponibile</h1>
           <p className="mt-3 text-sm leading-6 text-zinc-500">
-            La sessione è valida, ma il profilo instaMax non è stato trovato. Verifica di aver eseguito lo schema SQL aggiornato su Supabase.
+            Non riusciamo a recuperare il tuo profilo. Esci e accedi di nuovo per continuare.
           </p>
           <button
             type="button"

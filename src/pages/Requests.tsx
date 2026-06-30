@@ -105,7 +105,7 @@ export const Requests: React.FC = () => {
       setSuccess('Richiesta pubblicata con successo.');
       window.setTimeout(() => navigateTo(navigate, buildAppRoute(`/requests/${created.id}`)), 700);
     } catch (err: any) {
-      setError(err.message || 'Pubblicazione non riuscita. Verifica i permessi Supabase.');
+      setError(err.message || 'Pubblicazione non riuscita. Controlla i dati inseriti e riprova.');
     } finally { setPublishing(false); }
   };
 

@@ -219,9 +219,8 @@ export const Sidebar: React.FC = () => {
           </div>
         </div>
 
-        {/* Demo Switcher Select */}
         <div className="mt-1">
-          <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block mb-1">Simula Ruolo</label>
+          <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block mb-1">Profilo attivo</label>
           <select 
             value={activeRole} 
             onChange={(e) => {

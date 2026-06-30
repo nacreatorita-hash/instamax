@@ -3,7 +3,7 @@ import type { Profile, UserRole } from './types';
 
 const requireSupabase = () => {
   if (!isSupabaseConfigured) {
-    throw new Error('Supabase non è configurato. Compila il file .env.local con URL e anon key.');
+    throw new Error('Il servizio di accesso non è momentaneamente disponibile. Riprova tra poco.');
   }
 };
 
