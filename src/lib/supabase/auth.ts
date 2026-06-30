@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from './client';
 import type { Profile, UserRole } from './types';
+import { PUBLIC_SITE_URL } from '../navigation';
 
 const requireSupabase = () => {
   if (!isSupabaseConfigured) {
@@ -72,7 +73,7 @@ export async function signInWithGoogle(role?: UserRole) {
     options: {
       // Do not include a hash route here: Supabase must be able to append and
       // read the PKCE `code` from the real query string on return.
-      redirectTo: `${window.location.origin}${window.location.pathname}?oauth_callback=google`,
+      redirectTo: `${PUBLIC_SITE_URL}/?oauth_callback=google`,
       queryParams: { access_type: 'offline', prompt: 'select_account consent' },
     }
   });
