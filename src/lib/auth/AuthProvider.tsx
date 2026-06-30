@@ -89,11 +89,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // readable. Once the session is stored, clean the callback marker
           // and enter the role-specific dashboard.
           const callbackUrl = new URL(window.location.href);
-          if (callbackUrl.searchParams.get('oauth_callback') === 'google' && restoredProfile) {
+          if (callbackUrl.searchParams.get('oauth_callback') === 'google') {
+            const targetPath = restoredProfile
+              ? localStorage.getItem(PENDING_REQUEST_KEY) && restoredProfile.role === 'client'
+                ? buildAppRoute(APP_ROUTES.requestNew)
+                : getRedirectPath(restoredProfile.role)
+              : buildAppRoute(APP_ROUTES.dashboard);
+
             window.history.replaceState({}, document.title, window.location.pathname);
-            window.location.hash = localStorage.getItem(PENDING_REQUEST_KEY) && restoredProfile.role === 'client'
-              ? buildAppRoute(APP_ROUTES.requestNew)
-              : getRedirectPath(restoredProfile.role);
+            window.location.hash = targetPath;
           }
         } else {
           setProfile(null);

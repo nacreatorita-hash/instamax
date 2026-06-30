@@ -1,6 +1,5 @@
 import { isSupabaseConfigured, supabase } from './client';
 import type { Profile, UserRole } from './types';
-import { PUBLIC_SITE_URL } from '../navigation';
 
 const requireSupabase = () => {
   if (!isSupabaseConfigured) {
@@ -73,7 +72,9 @@ export async function signInWithGoogle(role?: UserRole) {
     options: {
       // Do not include a hash route here: Supabase must be able to append and
       // read the PKCE `code` from the real query string on return.
-      redirectTo: `${PUBLIC_SITE_URL}/?oauth_callback=google`,
+      // Use the current origin so local login returns to localhost and
+      // production login returns to instamax.it without cross-domain handoffs.
+      redirectTo: `${window.location.origin}/?oauth_callback=google`,
       queryParams: { access_type: 'offline', prompt: 'select_account consent' },
     }
   });

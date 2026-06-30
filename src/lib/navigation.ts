@@ -1,7 +1,5 @@
 import type { NavigateFunction, NavigateOptions } from 'react-router-dom';
 
-export const PUBLIC_SITE_URL = 'https://instamax.it';
-
 export const APP_ROUTES = {
   home: '/',
   login: '/login',
@@ -35,7 +33,7 @@ export function buildHashRoute(path: AppRoute): string {
 
 export function buildPublicAppUrl(path: AppRoute): string {
   if (typeof window === 'undefined') return buildHashRoute(path);
-  return `${PUBLIC_SITE_URL}/${buildHashRoute(path)}`;
+  return `${window.location.origin}/${buildHashRoute(path)}`;
 }
 
 export function navigateTo(navigate: NavigateFunction, path: AppRoute, options?: NavigateOptions): void {
