@@ -4,6 +4,7 @@ import { supabase } from '../supabase/client';
 import type { Profile, Subscription, UserRole } from '../supabase/types';
 import { getRedirectPath } from './roleRedirect';
 import { PENDING_REQUEST_KEY } from '../smart-request';
+import { APP_ROUTES, buildAppRoute } from '../navigation';
 import { 
   getCurrentProfile, 
   getSubscription,
@@ -91,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (callbackUrl.searchParams.get('oauth_callback') === 'google' && restoredProfile) {
             window.history.replaceState({}, document.title, window.location.pathname);
             window.location.hash = localStorage.getItem(PENDING_REQUEST_KEY) && restoredProfile.role === 'client'
-              ? '/requests/new'
+              ? buildAppRoute(APP_ROUTES.requestNew)
               : getRedirectPath(restoredProfile.role);
           }
         } else {

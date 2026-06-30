@@ -24,6 +24,7 @@ import { SmartRequestAssistant } from '../components/SmartRequestAssistant';
 import { CATEGORIES, CITIES } from '../data';
 import { supabase } from '../lib/supabase/client';
 import type { Category } from '../lib/supabase/types';
+import { APP_ROUTES, navigateTo } from '../lib/navigation';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ export const LandingPage: React.FC = () => {
 
   const handleRoleAction = (role: 'client' | 'professional' | 'company' | 'candidate', targetPath: string) => {
     setActiveRole(role);
-    navigate(targetPath);
+    navigateTo(navigate, targetPath);
   };
 
   // Icon mapping helper
@@ -71,10 +72,10 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/login')} className="font-semibold text-xs">
+            <Button variant="ghost" size="sm" onClick={() => navigateTo(navigate, APP_ROUTES.login)} className="font-semibold text-xs">
               Accedi
             </Button>
-            <Button variant="primary" size="sm" onClick={() => navigate('/register')} className="font-bold text-xs">
+            <Button variant="primary" size="sm" onClick={() => navigateTo(navigate, APP_ROUTES.register)} className="font-bold text-xs">
               Registrati
             </Button>
           </div>
@@ -100,7 +101,7 @@ export const LandingPage: React.FC = () => {
           {/* Core Action Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 w-full max-w-6xl px-2">
             <Card 
-              onClick={() => handleRoleAction('client', '/requests/new')}
+              onClick={() => handleRoleAction('client', APP_ROUTES.requestNew)}
               className="group cursor-pointer p-8 bg-white border border-zinc-100 rounded-[2.25rem] shadow-xl shadow-zinc-200/50 hover:border-blue-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between h-64 text-left"
             >
               <div>
@@ -118,7 +119,7 @@ export const LandingPage: React.FC = () => {
             </Card>
 
             <Card 
-              onClick={() => handleRoleAction('professional', '/dashboard')}
+              onClick={() => handleRoleAction('professional', APP_ROUTES.dashboard)}
               className="group cursor-pointer p-8 bg-white border border-zinc-100 rounded-[2.25rem] shadow-xl shadow-zinc-200/50 hover:border-blue-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between h-64 text-left"
             >
               <div>
@@ -136,7 +137,7 @@ export const LandingPage: React.FC = () => {
             </Card>
 
             <Card 
-              onClick={() => handleRoleAction('candidate', '/jobs')}
+              onClick={() => handleRoleAction('candidate', APP_ROUTES.jobs)}
               className="group cursor-pointer p-8 bg-white border border-zinc-100 rounded-[2.25rem] shadow-xl shadow-zinc-200/50 hover:border-blue-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between h-64 text-left"
             >
               <div>
@@ -154,7 +155,7 @@ export const LandingPage: React.FC = () => {
             </Card>
 
             <Card 
-              onClick={() => handleRoleAction('company', '/jobs/new')}
+              onClick={() => handleRoleAction('company', APP_ROUTES.jobNew)}
               className="group cursor-pointer p-8 bg-white border border-zinc-100 rounded-[2.25rem] shadow-xl shadow-zinc-200/50 hover:border-blue-500 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between h-64 text-left"
             >
               <div>
@@ -226,7 +227,7 @@ export const LandingPage: React.FC = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => handleRoleAction('client', '/requests')}
+              onClick={() => handleRoleAction('client', APP_ROUTES.requests)}
               className="text-xs font-semibold whitespace-nowrap"
             >
               Vedi tutto
@@ -237,7 +238,7 @@ export const LandingPage: React.FC = () => {
             {CATEGORIES.map((cat) => (
               <div 
                 key={cat.id} 
-                onClick={() => handleRoleAction('client', '/requests')}
+                onClick={() => handleRoleAction('client', APP_ROUTES.requests)}
                 className="bg-white border border-zinc-100 rounded-3xl p-6 text-left cursor-pointer group shadow-lg shadow-zinc-200/20 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 transform hover:-translate-y-0.5"
               >
                 <div className="h-12 w-12 bg-zinc-50 rounded-2xl flex items-center justify-center group-hover:scale-105 group-hover:bg-blue-50 transition-all duration-300 mb-4">
@@ -338,7 +339,7 @@ export const LandingPage: React.FC = () => {
             {CITIES.map((city) => (
               <span 
                 key={city}
-                onClick={() => handleRoleAction('client', '/requests')}
+                onClick={() => handleRoleAction('client', APP_ROUTES.requests)}
                 className="px-4 py-2 bg-white hover:bg-zinc-900 hover:text-white transition-all duration-200 rounded-full text-xs font-bold text-zinc-600 border border-zinc-200/60 shadow-xs cursor-pointer flex items-center gap-1.5"
               >
                 <MapPin size={12} className="text-zinc-400" /> {city}
@@ -368,9 +369,9 @@ export const LandingPage: React.FC = () => {
           <div>
             <h4 className="text-xs font-extrabold text-white uppercase tracking-wider mb-4">Per gli Utenti</h4>
             <ul className="flex flex-col gap-2.5 text-xs">
-              <li><span onClick={() => handleRoleAction('client', '/requests/new')} className="hover:text-white cursor-pointer transition-colors">Richiedi un intervento</span></li>
-              <li><span onClick={() => handleRoleAction('professional', '/dashboard')} className="hover:text-white cursor-pointer transition-colors">Iscriviti come artigiano</span></li>
-              <li><span onClick={() => handleRoleAction('candidate', '/jobs')} className="hover:text-white cursor-pointer transition-colors">Cerca annunci di lavoro</span></li>
+              <li><span onClick={() => handleRoleAction('client', APP_ROUTES.requestNew)} className="hover:text-white cursor-pointer transition-colors">Richiedi un intervento</span></li>
+              <li><span onClick={() => handleRoleAction('professional', APP_ROUTES.dashboard)} className="hover:text-white cursor-pointer transition-colors">Iscriviti come artigiano</span></li>
+              <li><span onClick={() => handleRoleAction('candidate', APP_ROUTES.jobs)} className="hover:text-white cursor-pointer transition-colors">Cerca annunci di lavoro</span></li>
             </ul>
           </div>
 

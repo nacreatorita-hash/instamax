@@ -21,6 +21,7 @@ import { getUserNotifications, markNotificationAsRead } from '../lib/notificatio
 import type { Notification } from '../lib/supabase/types';
 import { getUnreadMessagesCount, subscribeToConversations } from '../lib/chat';
 import { supabase } from '../lib/supabase/client';
+import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
 
 // === NOTIFICATION BELL ===
 export const NotificationBell: React.FC = () => {
@@ -117,11 +118,11 @@ export const BottomNavigation: React.FC = () => {
   }, [user?.id]);
 
   const navItems = [
-    { to: profile ? getRedirectPath(profile.role) : '/', label: 'Home', icon: Home },
-    { to: '/requests', label: 'Richieste', icon: ClipboardList },
-    { to: '/chat', label: 'Chat', icon: MessageSquare, hasBadge: unreadChats > 0, badgeCount: unreadChats },
-    { to: '/jobs', label: 'Lavoro', icon: Briefcase },
-    { to: '/profile', label: 'Profilo', icon: User },
+    { to: profile ? getRedirectPath(profile.role) : buildAppRoute(APP_ROUTES.home), label: 'Home', icon: Home },
+    { to: buildAppRoute(APP_ROUTES.requests), label: 'Richieste', icon: ClipboardList },
+    { to: buildAppRoute(APP_ROUTES.chat), label: 'Chat', icon: MessageSquare, hasBadge: unreadChats > 0, badgeCount: unreadChats },
+    { to: buildAppRoute(APP_ROUTES.jobs), label: 'Lavoro', icon: Briefcase },
+    { to: buildAppRoute(APP_ROUTES.profile), label: 'Profilo', icon: User },
   ];
 
   return (
@@ -160,25 +161,25 @@ export const Sidebar: React.FC = () => {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const currentProfile = profiles[activeRole];
-  const homePath = profile ? getRedirectPath(profile.role) : '/';
+  const homePath = profile ? getRedirectPath(profile.role) : buildAppRoute(APP_ROUTES.home);
 
   const handleLogout = async () => {
     try {
       await signOut();
     } finally {
-      navigate('/login', { replace: true });
+      navigateTo(navigate, APP_ROUTES.login, { replace: true });
     }
   };
 
   const menuItems = [
     { path: homePath, label: 'Home', icon: Home },
-    { path: '/requests', label: 'Richieste Clienti', icon: ClipboardList },
-    { path: '/chat', label: 'Messaggi Chat', icon: MessageSquare },
-    { path: '/jobs', label: 'Offerte Lavoro', icon: Briefcase },
-    { path: '/professionals', label: 'Professionisti', icon: UserCheck },
-    { path: '/candidates', label: 'Candidati', icon: Users },
-    { path: '/profile', label: 'Mio Profilo', icon: User },
-    { path: '/settings', label: 'Impostazioni', icon: Settings },
+    { path: buildAppRoute(APP_ROUTES.requests), label: 'Richieste Clienti', icon: ClipboardList },
+    { path: buildAppRoute(APP_ROUTES.chat), label: 'Messaggi Chat', icon: MessageSquare },
+    { path: buildAppRoute(APP_ROUTES.jobs), label: 'Offerte Lavoro', icon: Briefcase },
+    { path: buildAppRoute(APP_ROUTES.professionals), label: 'Professionisti', icon: UserCheck },
+    { path: buildAppRoute(APP_ROUTES.candidates), label: 'Candidati', icon: Users },
+    { path: buildAppRoute(APP_ROUTES.profile), label: 'Mio Profilo', icon: User },
+    { path: buildAppRoute(APP_ROUTES.settings), label: 'Impostazioni', icon: Settings },
   ];
 
   const roleLabels = {
@@ -191,7 +192,7 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-white border-r border-zinc-100 p-6 overflow-y-auto z-10 select-none">
       {/* Brand logo */}
-      <div className="flex items-center gap-2 mb-8 cursor-pointer" onClick={() => navigate(homePath)}>
+      <div className="flex items-center gap-2 mb-8 cursor-pointer" onClick={() => navigateTo(navigate, homePath)}>
         <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -225,7 +226,7 @@ export const Sidebar: React.FC = () => {
             value={activeRole} 
             onChange={(e) => {
               setActiveRole(e.target.value as any);
-              navigate('/dashboard');
+              navigateTo(navigate, APP_ROUTES.dashboard);
             }}
             className="w-full text-xs bg-white border border-zinc-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-blue-600 cursor-pointer font-semibold"
           >

@@ -18,6 +18,7 @@ import {
 import { Button, Card, Badge, Avatar, RatingStars, StatusToggle } from '../components/UI';
 import { RequestCard, ProfessionalCard, CandidateCard, JobCard } from '../components/Cards';
 import { useAuth } from '../lib/auth/useAuth';
+import { APP_ROUTES, navigateTo } from '../lib/navigation';
 
 export const Dashboard: React.FC = () => {
   const { profile } = useAuth();
@@ -69,7 +70,7 @@ export const Dashboard: React.FC = () => {
               <h2 className="text-base font-black text-zinc-950">{activeRole === 'client' ? 'Hai bisogno di un intervento?' : 'Le opportunità giuste, nella tua zona'}</h2>
               <p className="mt-1 text-sm text-zinc-500">{activeRole === 'client' ? 'Pubblica comune, categoria e urgenza: il tuo indirizzo resta privato.' : 'Configura categorie e comuni nel profilo, poi consulta il feed compatibile.'}</p>
             </div>
-            <div className="flex gap-2"><Button onClick={() => navigate(activeRole === 'client' ? '/requests/new' : '/requests')}>{activeRole === 'client' ? 'Nuova richiesta' : 'Vedi richieste'}</Button>{activeRole === 'professional' && <Button variant="outline" onClick={()=>navigate('/profile')}>Configura profilo</Button>}</div>
+            <div className="flex gap-2"><Button onClick={() => navigateTo(navigate, activeRole === 'client' ? APP_ROUTES.requestNew : APP_ROUTES.requests)}>{activeRole === 'client' ? 'Nuova richiesta' : 'Vedi richieste'}</Button>{activeRole === 'professional' && <Button variant="outline" onClick={()=>navigateTo(navigate, APP_ROUTES.profile)}>Configura profilo</Button>}</div>
           </Card>
         )}
         {activeRole === 'client' && <ClientDashboard />}
@@ -132,7 +133,7 @@ const ClientDashboard: React.FC = () => {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-extrabold text-zinc-950 tracking-tight">Le mie richieste di intervento</h2>
-            <Button size="sm" onClick={() => navigate('/requests/new')} className="text-xs flex items-center gap-1.5 font-bold">
+            <Button size="sm" onClick={() => navigateTo(navigate, APP_ROUTES.requestNew)} className="text-xs flex items-center gap-1.5 font-bold">
               <Plus size={14} /> Nuova Richiesta
             </Button>
           </div>
@@ -140,7 +141,7 @@ const ClientDashboard: React.FC = () => {
           {myRequests.length === 0 ? (
             <Card className="p-8 text-center border border-dashed border-zinc-200">
               <p className="text-xs text-zinc-500">Non hai ancora inserito nessuna richiesta di aiuto.</p>
-              <Button size="sm" variant="outline" onClick={() => navigate('/requests/new')} className="mt-4 text-xs font-bold">
+              <Button size="sm" variant="outline" onClick={() => navigateTo(navigate, APP_ROUTES.requestNew)} className="mt-4 text-xs font-bold">
                 Crea la prima adesso
               </Button>
             </Card>
@@ -161,7 +162,7 @@ const ClientDashboard: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-extrabold text-zinc-950 tracking-tight">Professionisti in evidenza</h2>
-            <Link to="/professionals" className="text-xs font-semibold text-zinc-500 hover:text-zinc-900">
+            <Link to={APP_ROUTES.professionals} className="text-xs font-semibold text-zinc-500 hover:text-zinc-900">
               Vedi tutti
             </Link>
           </div>
@@ -182,7 +183,7 @@ const ClientDashboard: React.FC = () => {
                 <Button 
                   size="sm" 
                   variant="secondary" 
-                  onClick={() => navigate('/chat')}
+                  onClick={() => navigateTo(navigate, APP_ROUTES.chat)}
                   className="p-2.5 rounded-full"
                 >
                   <MessageSquare size={14} />
@@ -259,7 +260,7 @@ const ProfessionalDashboard: React.FC = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-extrabold text-zinc-950 tracking-tight">Interventi e richieste aperte nella tua zona</h2>
-          <Link to="/requests" className="text-xs font-semibold text-zinc-500 hover:text-zinc-900">
+          <Link to={APP_ROUTES.requests} className="text-xs font-semibold text-zinc-500 hover:text-zinc-900">
             Vedi tutte
           </Link>
         </div>
@@ -330,7 +331,7 @@ const CompanyDashboard: React.FC = () => {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-extrabold text-zinc-950 tracking-tight">Le nostre ricerche attive</h2>
-            <Button size="sm" onClick={() => navigate('/jobs/new')} className="text-xs font-bold flex items-center gap-1.5">
+            <Button size="sm" onClick={() => navigateTo(navigate, APP_ROUTES.jobNew)} className="text-xs font-bold flex items-center gap-1.5">
               <Plus size={14} /> Pubblica Annuncio
             </Button>
           </div>
@@ -338,7 +339,7 @@ const CompanyDashboard: React.FC = () => {
           {myJobs.length === 0 ? (
             <Card className="p-8 text-center border border-dashed border-zinc-200">
               <p className="text-xs text-zinc-500">Non hai ancora pubblicato nessun annuncio di lavoro.</p>
-              <Button size="sm" variant="outline" onClick={() => navigate('/jobs/new')} className="mt-4 text-xs font-bold">
+              <Button size="sm" variant="outline" onClick={() => navigateTo(navigate, APP_ROUTES.jobNew)} className="mt-4 text-xs font-bold">
                 Crea il primo adesso
               </Button>
             </Card>
@@ -355,7 +356,7 @@ const CompanyDashboard: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-extrabold text-zinc-950 tracking-tight">Candidati caldi in zona</h2>
-            <Link to="/candidates" className="text-xs font-semibold text-zinc-500 hover:text-zinc-900">
+            <Link to={APP_ROUTES.candidates} className="text-xs font-semibold text-zinc-500 hover:text-zinc-900">
               Vedi tutti
             </Link>
           </div>
@@ -374,7 +375,7 @@ const CompanyDashboard: React.FC = () => {
                 <Button 
                   size="sm" 
                   variant="secondary" 
-                  onClick={() => navigate('/chat')}
+                  onClick={() => navigateTo(navigate, APP_ROUTES.chat)}
                   className="p-2.5 rounded-full"
                 >
                   <MessageSquare size={14} />
@@ -453,7 +454,7 @@ const CandidateDashboard: React.FC = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-extrabold text-zinc-950 tracking-tight">Annunci consigliati in base alle tue skill</h2>
-          <Link to="/jobs" className="text-xs font-semibold text-zinc-500 hover:text-zinc-900">
+          <Link to={APP_ROUTES.jobs} className="text-xs font-semibold text-zinc-500 hover:text-zinc-900">
             Vedi tutti
           </Link>
         </div>

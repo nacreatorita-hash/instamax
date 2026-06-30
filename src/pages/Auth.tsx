@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../lib/auth/useAuth';
 import { getRedirectPath } from '../lib/auth/roleRedirect';
 import { PENDING_REQUEST_KEY } from '../lib/smart-request';
+import { APP_ROUTES, navigateTo } from '../lib/navigation';
 import { Button, Input, Select, Textarea, Card } from '../components/UI';
 
 export const Auth: React.FC = () => {
@@ -32,10 +33,10 @@ export const Auth: React.FC = () => {
     if (!authLoading && user && profile) {
       setActiveRole(profile.role);
       if (localStorage.getItem(PENDING_REQUEST_KEY) && profile.role === 'client') {
-        navigate('/requests/new', { replace: true });
+        navigateTo(navigate, APP_ROUTES.requestNew, { replace: true });
         return;
       }
-      navigate(getRedirectPath(profile.role), { replace: true });
+      navigateTo(navigate, getRedirectPath(profile.role), { replace: true });
     }
   }, [authLoading, user, profile, navigate, setActiveRole]);
 
@@ -78,10 +79,10 @@ export const Auth: React.FC = () => {
         
         setTimeout(() => {
           if (localStorage.getItem(PENDING_REQUEST_KEY) && userProfile === 'client') {
-            navigate('/requests/new');
+            navigateTo(navigate, APP_ROUTES.requestNew);
             return;
           }
-          navigate(getRedirectPath(userProfile));
+          navigateTo(navigate, getRedirectPath(userProfile));
         }, 1000);
       } else {
         // Sign up via Supabase
@@ -101,7 +102,7 @@ export const Auth: React.FC = () => {
         });
 
         if (result.session) {
-          setTimeout(() => navigate(getRedirectPath(role)), 1200);
+          setTimeout(() => navigateTo(navigate, getRedirectPath(role)), 1200);
         }
       }
     } catch (err: any) {
@@ -128,7 +129,7 @@ export const Auth: React.FC = () => {
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col justify-center py-12 px-6 lg:px-8 select-none">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div 
-          onClick={() => navigate('/')}
+          onClick={() => navigateTo(navigate, APP_ROUTES.home)}
           className="flex items-center justify-center gap-2 cursor-pointer mb-6"
         >
           <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -296,7 +297,7 @@ export const Auth: React.FC = () => {
 
           <div className="mt-6 pt-5 border-t border-zinc-100 text-center">
             <button
-              onClick={() => navigate(isLogin ? '/register' : '/login')}
+              onClick={() => navigateTo(navigate, isLogin ? APP_ROUTES.register : APP_ROUTES.login)}
               className="text-xs font-bold text-zinc-500 hover:text-zinc-950 transition-colors"
               disabled={loading}
             >

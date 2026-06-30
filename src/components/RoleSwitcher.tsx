@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth/useAuth';
 import { changeMyRole } from '../lib/supabase/auth';
 import { getRedirectPath } from '../lib/auth/roleRedirect';
 import type { UserRole } from '../lib/supabase/types';
+import { navigateTo } from '../lib/navigation';
 
 const roles: Array<{ value: UserRole; label: string; description: string; icon: React.ReactNode }> = [
   { value: 'client', label: 'Cliente', description: 'Cerco professionisti e pubblico richieste.', icon: <UserRound size={20}/> },
@@ -30,7 +31,7 @@ export const RoleSwitcher: React.FC = () => {
       const updated = await changeMyRole(selected);
       await refreshProfile();
       setMessage(`Ruolo cambiato in ${roles.find(item=>item.value===selected)?.label}.`);
-      window.setTimeout(() => navigate(getRedirectPath(updated.role), { replace: true }), 500);
+      window.setTimeout(() => navigateTo(navigate, getRedirectPath(updated.role), { replace: true }), 500);
     } catch (err:any) { setError(err.message || 'Impossibile cambiare ruolo.'); }
     finally { setLoading(false); }
   };

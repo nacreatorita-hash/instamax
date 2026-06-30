@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth/useAuth';
 import { closeServiceRequest, deleteServiceRequest, getRequestById, updateServiceRequest } from '../lib/requests';
 import type { RequestUrgency, ServiceRequest } from '../lib/supabase/types';
 import { getOrCreateRequestConversation } from '../lib/chat';
+import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
 
 const urgencyLabels = { urgent:'Urgente', today:'Oggi', tomorrow:'Entro domani', week:'Questa settimana', not_urgent:'Non urgente' };
 const statusLabels = { open:'Aperta', in_progress:'In corso', closed:'Chiusa', cancelled:'Annullata' };
@@ -43,14 +44,14 @@ export const RequestDetail: React.FC = () => {
     } catch (err:any) { setError(err.message); } finally { setSaving(false); }
   };
   const close = async () => { if (!window.confirm('Vuoi chiudere questa richiesta?')) return; try { setRequest(await closeServiceRequest(id)); } catch(err:any){setError(err.message);} };
-  const remove = async () => { if (!window.confirm('Eliminare definitivamente la richiesta e i suoi allegati?')) return; try { await deleteServiceRequest(id); navigate('/requests'); } catch(err:any){setError(err.message);} };
-  const contact = async () => { setContacting(true); setError(''); try { const conversation = await getOrCreateRequestConversation(id); navigate(`/chat/${conversation.id}`); } catch(err:any){ setError(err.message || 'Non puoi contattare il cliente per questa richiesta.'); } finally { setContacting(false); } };
+  const remove = async () => { if (!window.confirm('Eliminare definitivamente la richiesta e i suoi allegati?')) return; try { await deleteServiceRequest(id); navigateTo(navigate, APP_ROUTES.requests); } catch(err:any){setError(err.message);} };
+  const contact = async () => { setContacting(true); setError(''); try { const conversation = await getOrCreateRequestConversation(id); navigateTo(navigate, buildAppRoute(`/chat/${conversation.id}`)); } catch(err:any){ setError(err.message || 'Non puoi contattare il cliente per questa richiesta.'); } finally { setContacting(false); } };
 
   if (loading) return <div className="flex min-h-[70vh] items-center justify-center text-sm font-semibold text-zinc-400">Caricamento dettaglio…</div>;
-  if (!request) return <div className="flex min-h-[70vh] items-center justify-center p-6"><Card className="max-w-md text-center"><XCircle className="mx-auto text-red-500"/><h1 className="mt-3 text-lg font-black">Richiesta non disponibile</h1><p className="mt-2 text-sm text-zinc-500">Non esiste oppure non hai i permessi per visualizzarla.</p><Button className="mt-5" onClick={()=>navigate('/requests')}>Torna alle richieste</Button></Card></div>;
+  if (!request) return <div className="flex min-h-[70vh] items-center justify-center p-6"><Card className="max-w-md text-center"><XCircle className="mx-auto text-red-500"/><h1 className="mt-3 text-lg font-black">Richiesta non disponibile</h1><p className="mt-2 text-sm text-zinc-500">Non esiste oppure non hai i permessi per visualizzarla.</p><Button className="mt-5" onClick={()=>navigateTo(navigate, APP_ROUTES.requests)}>Torna alle richieste</Button></Card></div>;
 
   return <div className="min-h-screen bg-zinc-50/60 pb-28">
-    <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/90 px-5 py-4 backdrop-blur-xl"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><button onClick={()=>navigate('/requests')} className="rounded-full p-2 hover:bg-zinc-100"><ArrowLeft size={19}/></button>{owner&&<div className="flex gap-2">{request.status==='open'&&<Button size="sm" variant="outline" onClick={()=>setEditing(v=>!v)}><Edit3 size={14}/> Modifica</Button>}<Button size="sm" variant="danger" onClick={remove}><Trash2 size={14}/></Button></div>}</div></header>
+    <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/90 px-5 py-4 backdrop-blur-xl"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><button onClick={()=>navigateTo(navigate, APP_ROUTES.requests)} className="rounded-full p-2 hover:bg-zinc-100"><ArrowLeft size={19}/></button>{owner&&<div className="flex gap-2">{request.status==='open'&&<Button size="sm" variant="outline" onClick={()=>setEditing(v=>!v)}><Edit3 size={14}/> Modifica</Button>}<Button size="sm" variant="danger" onClick={remove}><Trash2 size={14}/></Button></div>}</div></header>
     <main className="mx-auto max-w-5xl space-y-5 p-5 md:p-8">
       {error&&<div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
       <div className="flex flex-wrap items-center gap-2"><Badge variant={request.status==='open'?'success':request.status==='in_progress'?'info':'gray'}>{statusLabels[request.status]}</Badge><Badge variant={request.urgency==='urgent'?'warning':'gray'}>{urgencyLabels[request.urgency]}</Badge><span className="ml-auto text-xs font-semibold text-zinc-400">Pubblicata {elapsed}</span></div>

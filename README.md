@@ -95,6 +95,23 @@ env:
 
 Non inserire mai le chiavi Supabase direttamente nel codice. Dopo aver creato o aggiornato i Secrets, rilancia il workflow GitHub Pages oppure fai un nuovo push su `main`.
 
+### Navigazione in produzione
+
+GitHub Pages ospita l'app come sito statico, quindi instaMax usa `HashRouter` per rendere affidabili le pagine interne anche dopo refresh o apertura diretta.
+
+Le rotte tecniche pubblicate sono del tipo:
+
+- `/#/dashboard`
+- `/#/requests`
+- `/#/chat`
+- `/#/jobs`
+- `/#/professionals`
+- `/#/candidates`
+- `/#/profile`
+- `/#/settings`
+
+Questo dettaglio non deve essere gestito dagli utenti: la navigazione avviene cliccando menu, bottom navigation, pulsanti e card dell'app. I link interni sono centralizzati in `src/lib/navigation.ts` per mantenere compatibilità con GitHub Pages e ridurre correzioni manuali future.
+
 ## Configurazione Supabase
 
 Su un progetto nuovo esegui nel SQL Editor, in ordine:

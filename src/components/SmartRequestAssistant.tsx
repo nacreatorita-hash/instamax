@@ -17,6 +17,7 @@ import {
   savePendingRequestDraft,
   type SmartRequestDraft,
 } from '../lib/smart-request';
+import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
 
 export const SmartRequestAssistant = ({
   categories,
@@ -87,7 +88,7 @@ export const SmartRequestAssistant = ({
 
     if (!user) {
       savePendingRequestDraft(draft);
-      navigate('/login');
+      navigateTo(navigate, APP_ROUTES.login);
       return;
     }
 
@@ -117,7 +118,7 @@ export const SmartRequestAssistant = ({
       await createRequestNotifications(created.id).catch(err => console.warn('Notifiche non create:', err));
       clearPendingRequestDraft();
       setNotice('Richiesta pubblicata. Stiamo avvisando i professionisti compatibili nella tua zona.');
-      window.setTimeout(() => navigate(`/requests/${created.id}`), 700);
+      window.setTimeout(() => navigateTo(navigate, buildAppRoute(`/requests/${created.id}`)), 700);
     } catch (err: any) {
       setError(err.message || 'Richiesta non pubblicata. Riprova tra poco.');
     } finally {

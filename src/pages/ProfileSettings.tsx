@@ -21,6 +21,7 @@ import { Button, Input, Select, Textarea, Card, Avatar, Badge } from '../compone
 import { ProfessionalSetup } from '../components/ProfessionalSetup';
 import { RoleSwitcher } from '../components/RoleSwitcher';
 import { CandidateSetup } from '../components/CandidateSetup';
+import { APP_ROUTES, navigateTo } from '../lib/navigation';
 
 // === USER PROFILE VIEW ===
 export const Profile: React.FC = () => {
@@ -322,7 +323,7 @@ export const Settings: React.FC = () => {
     setLoggingOut(true);
     try {
       await signOut();
-      navigate('/login');
+      navigateTo(navigate, APP_ROUTES.login);
     } catch (err) {
       console.error('Logout error:', err);
     } finally {

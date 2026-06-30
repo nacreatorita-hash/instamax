@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './useAuth';
+import { APP_ROUTES, buildAppRoute } from '../navigation';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -41,7 +42,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // If not authenticated, redirect to login
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={buildAppRoute(APP_ROUTES.login)} state={{ from: location }} replace />;
   }
 
   if (!profile) {
@@ -67,7 +68,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // If role is loaded and there are allowedRoles restrictions
   if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
     // Redirect user to their appropriate role dashboard if they are accessing the wrong dashboard
-    return <Navigate to={`/dashboard/${profile.role}`} replace />;
+    return <Navigate to={buildAppRoute(`/dashboard/${profile.role}`)} replace />;
   }
 
   return <>{children}</>;

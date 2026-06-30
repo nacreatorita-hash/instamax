@@ -5,6 +5,7 @@ import { Badge, Button, Card } from '../components/UI';
 import { useAuth } from '../lib/auth/useAuth';
 import { getCandidateById, getCandidateProfile, getPublicCandidates, saveCandidate } from '../lib/candidates';
 import { getOrCreateCandidateConversation } from '../lib/chat';
+import { buildAppRoute, navigateTo } from '../lib/navigation';
 
 export const Candidates: React.FC = () => {
   const { id } = useParams();
@@ -60,7 +61,7 @@ const List = () => {
                 {(candidate.skills ?? []).slice(0, 5).map((skill: string) => <Badge key={skill}>{skill}</Badge>)}
               </div>
               <p className="mt-3 line-clamp-3 text-sm text-zinc-500">{candidate.bio}</p>
-              <Button fullWidth className="mt-4" onClick={() => navigate(`/candidates/${candidate.id}`)}>
+              <Button fullWidth className="mt-4" onClick={() => navigateTo(navigate, buildAppRoute(`/candidates/${candidate.id}`))}>
                 Vedi curriculum
               </Button>
             </Card>
@@ -88,7 +89,7 @@ const Detail = ({ id }: { id: string }) => {
   const contact = async () => {
     try {
       const conversation = await getOrCreateCandidateConversation(id);
-      navigate(`/chat/${conversation.id}`);
+      navigateTo(navigate, buildAppRoute(`/chat/${conversation.id}`));
     } catch (err: any) {
       setError(err.message);
     }

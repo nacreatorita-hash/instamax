@@ -22,6 +22,7 @@ import {
 import { Card, Badge, Avatar, RatingStars, Button } from './UI';
 import { useApp } from '../context/AppContext';
 import type { ServiceRequest } from '../lib/supabase/types';
+import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
 
 // === REQUEST CARD ===
 interface RequestCardProps {
@@ -65,7 +66,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({ request, onStatusChang
           </div>
           <div className="flex items-center justify-between gap-3">
             <Badge variant={request.urgency === 'urgent' ? 'warning' : 'gray'}>{urgencyLabels[request.urgency]}</Badge>
-            <Button size="sm" onClick={() => navigate(`/requests/${request.id}`)}>Dettagli <ArrowRight size={14} /></Button>
+            <Button size="sm" onClick={() => navigateTo(navigate, buildAppRoute(`/requests/${request.id}`))}>Dettagli <ArrowRight size={14} /></Button>
           </div>
         </div>
       </Card>
@@ -88,7 +89,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({ request, onStatusChang
 
   const handleContactClient = () => {
     // Find or create a mock chat with the client
-    navigate('/chat');
+    navigateTo(navigate, APP_ROUTES.chat);
   };
 
   return (
@@ -227,7 +228,7 @@ export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ professional
         <Button 
           size="sm" 
           variant="secondary"
-          onClick={() => navigate('/chat')}
+          onClick={() => navigateTo(navigate, APP_ROUTES.chat)}
           className="text-xs font-bold py-2 px-4 rounded-full flex items-center gap-1"
         >
           Contatta <ArrowRight size={12} />
@@ -296,7 +297,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({ candidate }) => {
         <Button 
           size="sm" 
           variant="secondary"
-          onClick={() => navigate('/chat')}
+          onClick={() => navigateTo(navigate, APP_ROUTES.chat)}
           className="text-xs font-bold py-2 px-4 rounded-full flex items-center gap-1"
         >
           Colloquio <ArrowRight size={12} />

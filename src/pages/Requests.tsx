@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase/client';
 import type { Category, ItalianLocation, RequestStatus, RequestUrgency, ServiceRequest } from '../lib/supabase/types';
 import { createServiceRequest, getCompatibleRequestsForProfessional, getRequestsForClient, uploadRequestMedia } from '../lib/requests';
 import { createRequestNotifications } from '../lib/notifications';
+import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
 
 const urgencyOptions = [
   { value: 'urgent', label: 'Urgente' }, { value: 'today', label: 'Oggi' },
@@ -102,7 +103,7 @@ export const Requests: React.FC = () => {
       if (files.length) await uploadRequestMedia(user.id, created.id, files);
       await createRequestNotifications(created.id).catch(err => console.warn('Notifiche non create:', err));
       setSuccess('Richiesta pubblicata con successo.');
-      window.setTimeout(() => navigate(`/requests/${created.id}`), 700);
+      window.setTimeout(() => navigateTo(navigate, buildAppRoute(`/requests/${created.id}`)), 700);
     } catch (err: any) {
       setError(err.message || 'Pubblicazione non riuscita. Verifica i permessi Supabase.');
     } finally { setPublishing(false); }
@@ -150,12 +151,12 @@ export const Requests: React.FC = () => {
   if (!profile || !['client','professional'].includes(profile.role)) return <RoleUnavailable text="Le richieste operative sono disponibili per clienti e professionisti." />;
 
   return <div className="min-h-screen bg-zinc-50/60 pb-28">
-    <header className="border-b border-zinc-100 bg-white px-5 py-6"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><h1 className="text-2xl font-black text-zinc-950">{profile.role === 'client' ? 'Le mie richieste' : 'Lavori compatibili'}</h1><p className="mt-1 text-sm text-zinc-500">{profile.role === 'client' ? 'Gestisci gli interventi che hai pubblicato.' : 'Solo richieste aperte nelle tue categorie e zone operative.'}</p></div>{profile.role === 'client' && <Button onClick={()=>navigate('/requests/new')}><Plus size={16}/> Nuova richiesta</Button>}</div></header>
+    <header className="border-b border-zinc-100 bg-white px-5 py-6"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><h1 className="text-2xl font-black text-zinc-950">{profile.role === 'client' ? 'Le mie richieste' : 'Lavori compatibili'}</h1><p className="mt-1 text-sm text-zinc-500">{profile.role === 'client' ? 'Gestisci gli interventi che hai pubblicato.' : 'Solo richieste aperte nelle tue categorie e zone operative.'}</p></div>{profile.role === 'client' && <Button onClick={()=>navigateTo(navigate, APP_ROUTES.requestNew)}><Plus size={16}/> Nuova richiesta</Button>}</div></header>
     <main className="mx-auto max-w-7xl space-y-6 p-5 md:p-8">
       {error && <Notice kind="error" text={error}/>} 
       <div className="grid gap-3 rounded-3xl border border-zinc-100 bg-white p-4 md:grid-cols-5"><div className="relative md:col-span-2"><Search className="absolute left-3 top-3.5 text-zinc-400" size={16}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cerca nel titolo o descrizione" className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-blue-500"/></div><FilterSelect value={filterCategory} onChange={setFilterCategory} options={[['all','Tutte le categorie'],...categories.map(c=>[c.id,c.name])] as string[][]}/><FilterSelect value={filterCity} onChange={setFilterCity} options={[['all','Tutti i comuni'],...Array.from(new Set<string>(requests.map(r=>r.city))).map(city=>[city,city])] as string[][]}/><FilterSelect value={filterUrgency} onChange={setFilterUrgency} options={[['all','Tutte le urgenze'],...urgencyOptions.map(o=>[o.value,o.label])] as string[][]}/></div>
       {profile.role === 'client' && <div className="max-w-xs"><FilterSelect value={filterStatus} onChange={setFilterStatus} options={[['all','Tutti gli stati'],['open','Aperte'],['in_progress','In corso'],['closed','Chiuse'],['cancelled','Annullate']]}/></div>}
-      {loading ? <div className="py-20 text-center text-sm font-semibold text-zinc-400">Caricamento richieste…</div> : filtered.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{filtered.map(item=><RequestCard key={item.id} request={item}/>)}</div> : <EmptyState professional={profile.role==='professional'} onCreate={()=>navigate('/requests/new')}/>} 
+      {loading ? <div className="py-20 text-center text-sm font-semibold text-zinc-400">Caricamento richieste…</div> : filtered.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{filtered.map(item=><RequestCard key={item.id} request={item}/>)}</div> : <EmptyState professional={profile.role==='professional'} onCreate={()=>navigateTo(navigate, APP_ROUTES.requestNew)}/>} 
     </main>
   </div>;
 };

@@ -26,6 +26,7 @@ import {
 import { uploadChatMedia } from '../lib/chat-media';
 import { createLocationNotification, createMessageNotification } from '../lib/notifications';
 import type { ChatMessage, Conversation } from '../lib/supabase/types';
+import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
 
 type RealtimeHealth = 'connecting' | 'live' | 'fallback';
 
@@ -127,7 +128,7 @@ const ChatList = () => {
         {loading
           ? <Loading label="Caricamento conversazioni…" />
           : filtered.length
-            ? <ConversationList items={filtered} onOpen={conversationId => navigate(`/chat/${conversationId}`)} />
+            ? <ConversationList items={filtered} onOpen={conversationId => navigateTo(navigate, buildAppRoute(`/chat/${conversationId}`))} />
             : (
               <Card hoverEffect={false} className="py-14 text-center">
                 <MessageCircle className="mx-auto text-blue-600" size={34} />
@@ -293,7 +294,7 @@ const ChatDetail = ({ id }: { id: string }) => {
     return (
       <div className="p-8">
         <Notice text={error || 'Conversazione non trovata.'} />
-        <Button variant="outline" onClick={() => navigate('/chat')} className="mt-3">
+        <Button variant="outline" onClick={() => navigateTo(navigate, APP_ROUTES.chat)} className="mt-3">
           Torna ai messaggi
         </Button>
       </div>
@@ -305,7 +306,7 @@ const ChatDetail = ({ id }: { id: string }) => {
   return (
     <div className="flex h-[calc(100vh-5.5rem)] flex-col bg-white md:h-[calc(100vh-4rem)]">
       <header className="flex items-center gap-3 border-b border-zinc-100 bg-white p-3 md:px-6">
-        <button onClick={() => navigate('/chat')} className="rounded-full p-2 hover:bg-zinc-100" aria-label="Torna alle conversazioni">
+        <button onClick={() => navigateTo(navigate, APP_ROUTES.chat)} className="rounded-full p-2 hover:bg-zinc-100" aria-label="Torna alle conversazioni">
           <ArrowLeft size={19} />
         </button>
         <Avatar
