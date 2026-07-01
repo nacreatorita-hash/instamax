@@ -143,7 +143,7 @@ export const BottomNavigation: React.FC = () => {
 
   const navItems = [
     { to: profile ? getRedirectPath(profile.role) : buildAppRoute(APP_ROUTES.home), label: 'Home', icon: Home },
-    { to: buildAppRoute(APP_ROUTES.requests), label: 'Richieste', icon: ClipboardList },
+    { to: buildAppRoute(APP_ROUTES.requests), label: profile?.role === 'client' ? 'Le mie' : 'Richieste', icon: ClipboardList },
     { to: buildAppRoute(APP_ROUTES.chat), label: 'Chat', icon: MessageSquare, hasBadge: unreadChats > 0, badgeCount: unreadChats },
     { to: buildAppRoute(APP_ROUTES.jobs), label: 'Lavoro', icon: Briefcase },
     { to: buildAppRoute(APP_ROUTES.profile), label: 'Profilo', icon: User },
@@ -184,6 +184,11 @@ export const Sidebar: React.FC = () => {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const homePath = profile ? getRedirectPath(profile.role) : buildAppRoute(APP_ROUTES.home);
+  const requestsLabel = profile?.role === 'client'
+    ? 'Le mie richieste'
+    : ['professional', 'company'].includes(profile?.role ?? '')
+      ? 'Richieste compatibili'
+      : 'Richieste';
 
   const handleLogout = async () => {
     try {
@@ -195,7 +200,7 @@ export const Sidebar: React.FC = () => {
 
   const menuItems = [
     { path: homePath, label: 'Home', icon: Home },
-    { path: buildAppRoute(APP_ROUTES.requests), label: 'Richieste Clienti', icon: ClipboardList },
+    { path: buildAppRoute(APP_ROUTES.requests), label: requestsLabel, icon: ClipboardList },
     { path: buildAppRoute(APP_ROUTES.chat), label: 'Messaggi Chat', icon: MessageSquare },
     { path: buildAppRoute(APP_ROUTES.jobs), label: 'Offerte Lavoro', icon: Briefcase },
     { path: buildAppRoute(APP_ROUTES.professionals), label: 'Professionisti', icon: UserCheck },
