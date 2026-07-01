@@ -2,7 +2,7 @@ import { supabase } from './supabase/client';
 import type { RequestMedia, ServiceRequest } from './supabase/types';
 
 export type ServiceRequestInput = Pick<ServiceRequest,
-  'title' | 'description' | 'category_id' | 'city' | 'province' | 'urgency'
+  'title' | 'description' | 'category_id' | 'municipality_code' | 'city' | 'province_code' | 'province' | 'urgency'
 > & { budget?: number | null };
 
 const requestSelect = '*, categories(id,name,slug,icon), request_media(*)';
@@ -13,8 +13,10 @@ export async function createServiceRequest(clientId: string, input: ServiceReque
     title: input.title.trim(),
     description: input.description.trim(),
     category_id: input.category_id,
+    municipality_code: input.municipality_code,
     city: input.city.trim(),
-    province: input.province.trim().toUpperCase(),
+    province_code: input.province_code,
+    province: input.province.trim(),
     urgency: input.urgency,
     budget: input.budget ?? null,
     status: 'open',
@@ -24,7 +26,7 @@ export async function createServiceRequest(clientId: string, input: ServiceReque
 }
 
 export async function updateServiceRequest(id: string, input: Partial<ServiceRequestInput>) {
-  const payload = { ...input, province: input.province?.trim().toUpperCase() };
+  const payload = { ...input, province: input.province?.trim() };
   const { data, error } = await supabase.from('service_requests').update(payload)
     .eq('id', id).select(requestSelect).single();
   if (error) throw error;

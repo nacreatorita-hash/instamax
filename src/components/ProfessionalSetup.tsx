@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Check, MapPin, Settings2, Wrench } from 'lucide-react';
 import { Button, Card, Input, Select, Textarea } from './UI';
+import { MunicipalityMultiSelect } from './MunicipalityAutocomplete';
 import { supabase } from '../lib/supabase/client';
-import type { Category, ItalianLocation, ProfessionalProfile } from '../lib/supabase/types';
+import type { Category, ProfessionalProfile } from '../lib/supabase/types';
+import { findMunicipalityByLegacyLocation, loadMunicipalities, type Municipality } from '../lib/municipalities';
 import { getProfessionalCategories, getProfessionalProfile, getServiceAreas, setProfessionalCategories, setServiceAreas, updateProfessionalProfile } from '../lib/professionals';
 
 export const ProfessionalSetup: React.FC<{ userId: string }> = ({ userId }) => {
   const [professional, setProfessional] = useState<ProfessionalProfile | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [locations, setLocations] = useState<ItalianLocation[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [selectedAreas, setSelectedAreas] = useState<Municipality[]>([]);
   const [businessName, setBusinessName] = useState('');
   const [bio, setBio] = useState('');
   const [years, setYears] = useState('0');
@@ -22,17 +23,19 @@ export const ProfessionalSetup: React.FC<{ userId: string }> = ({ userId }) => {
 
   useEffect(() => { void (async () => {
     try {
-      const [prof, categoryResult, locationResult] = await Promise.all([
+      const [prof, categoryResult] = await Promise.all([
         getProfessionalProfile(userId),
         supabase.from('categories').select('*').eq('active', true).order('name'),
-        supabase.from('italian_locations').select('*').eq('active', true).order('city'),
       ]);
       if (categoryResult.error) throw categoryResult.error;
-      if (locationResult.error) throw locationResult.error;
       setProfessional(prof); setBusinessName(prof.business_name ?? ''); setBio(prof.bio ?? ''); setYears(String(prof.years_experience)); setStatus(prof.status);
-      setCategories((categoryResult.data??[]) as Category[]); setLocations((locationResult.data??[]) as ItalianLocation[]);
+      setCategories((categoryResult.data??[]) as Category[]);
       const [categoryIds, areas] = await Promise.all([getProfessionalCategories(prof.id), getServiceAreas(prof.id)]);
-      setSelectedCategories(categoryIds); setSelectedAreas(areas.map(area=>`${area.city}|${area.province}`));
+      const catalogue = await loadMunicipalities();
+      const resolved = await Promise.all(areas.map(area => area.municipality_code
+        ? catalogue.find(item => item.code === area.municipality_code) ?? null
+        : findMunicipalityByLegacyLocation(area.city, area.province)));
+      setSelectedCategories(categoryIds); setSelectedAreas(resolved.filter((item): item is Municipality => Boolean(item)));
     } catch(err:any){setError(err.message);} finally{setLoading(false);}
   })(); }, [userId]);
 
@@ -42,7 +45,7 @@ export const ProfessionalSetup: React.FC<{ userId: string }> = ({ userId }) => {
     try {
       await updateProfessionalProfile(userId,{business_name:businessName.trim()||null,bio:bio.trim()||null,years_experience:Math.max(0,Number(years)||0),status});
       await setProfessionalCategories(professional.id,selectedCategories);
-      await setServiceAreas(professional.id,selectedAreas.map(key=>{const [city,province]=key.split('|');return{city,province};}));
+      await setServiceAreas(professional.id, selectedAreas);
       setMessage('Profilo professionale aggiornato. Il feed è ora calibrato sulle tue preferenze.');
     }catch(err:any){setError(err.message);}finally{setSaving(false);}
   };
@@ -54,7 +57,7 @@ export const ProfessionalSetup: React.FC<{ userId: string }> = ({ userId }) => {
       <Select label="Stato disponibilità" value={status} onChange={e=>setStatus(e.target.value as ProfessionalProfile['status'])} options={[{value:'available',label:'Disponibile'},{value:'busy',label:'Occupato'},{value:'not_available',label:'Non disponibile'}]}/>
       <Textarea label="Presentazione professionale" value={bio} onChange={e=>setBio(e.target.value)} rows={5} placeholder="Esperienza, certificazioni e modo di lavorare…"/>
       <ChoiceGrid title="Categorie di lavoro" icon={<Wrench size={17}/>} items={categories.map(c=>({value:c.id,label:c.name}))} selected={selectedCategories} onToggle={value=>toggle(value,setSelectedCategories)}/>
-      <ChoiceGrid title="Comuni / zone operative" icon={<MapPin size={17}/>} items={locations.map(l=>({value:`${l.city}|${l.province}`,label:`${l.city} (${l.province})`}))} selected={selectedAreas} onToggle={value=>toggle(value,setSelectedAreas)}/>
+      <MunicipalityMultiSelect values={selectedAreas} onChange={setSelectedAreas} required/>
       {(selectedCategories.length===0||selectedAreas.length===0)&&<p className="rounded-2xl bg-amber-50 p-4 text-xs font-semibold leading-relaxed text-amber-700">Seleziona almeno una categoria e un comune per ricevere richieste compatibili.</p>}
       <Button fullWidth size="lg" disabled={saving}>{saving?'Salvataggio…':<><Check size={17}/> Salva configurazione professionale</>}</Button>
     </form>

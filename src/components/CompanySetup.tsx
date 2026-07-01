@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, Check, MapPin, Wrench } from 'lucide-react';
 import { Button, Card, Input, Textarea } from './UI';
+import { MunicipalityMultiSelect } from './MunicipalityAutocomplete';
 import { supabase } from '../lib/supabase/client';
-import type { Category, CompanyProfile, ItalianLocation } from '../lib/supabase/types';
+import type { Category, CompanyProfile } from '../lib/supabase/types';
+import { findMunicipalityByLegacyLocation, loadMunicipalities, type Municipality } from '../lib/municipalities';
 import { getCompanyCategories, getCompanyProfile, getCompanyServiceAreas, setCompanyCategories, setCompanyServiceAreas, updateCompanyProfile } from '../lib/companies';
 
 export const CompanySetup = ({ userId }: { userId: string }) => {
   const [company, setCompany] = useState<CompanyProfile | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [locations, setLocations] = useState<ItalianLocation[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [selectedAreas, setSelectedAreas] = useState<Municipality[]>([]);
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [website, setWebsite] = useState('');
@@ -20,17 +21,19 @@ export const CompanySetup = ({ userId }: { userId: string }) => {
 
   useEffect(() => { void (async () => {
     try {
-      const [loaded, categoryResult, locationResult] = await Promise.all([
+      const [loaded, categoryResult] = await Promise.all([
         getCompanyProfile(userId),
         supabase.from('categories').select('*').eq('active', true).order('name'),
-        supabase.from('italian_locations').select('*').eq('active', true).order('city'),
       ]);
       if (categoryResult.error) throw categoryResult.error;
-      if (locationResult.error) throw locationResult.error;
       setCompany(loaded); setName(loaded.company_name ?? ''); setBio(loaded.bio ?? ''); setWebsite(loaded.website ?? '');
-      setCategories((categoryResult.data ?? []) as Category[]); setLocations((locationResult.data ?? []) as ItalianLocation[]);
+      setCategories((categoryResult.data ?? []) as Category[]);
       const [categoryIds, areas] = await Promise.all([getCompanyCategories(loaded.id), getCompanyServiceAreas(loaded.id)]);
-      setSelectedCategories(categoryIds); setSelectedAreas(areas.map(area => `${area.city}|${area.province}`));
+      const catalogue = await loadMunicipalities();
+      const resolved = await Promise.all(areas.map(area => area.municipality_code
+        ? catalogue.find(item => item.code === area.municipality_code) ?? null
+        : findMunicipalityByLegacyLocation(area.city, area.province)));
+      setSelectedCategories(categoryIds); setSelectedAreas(resolved.filter((item): item is Municipality => Boolean(item)));
     } catch (err: any) { setError(err.message); }
   })(); }, [userId]);
 
@@ -40,7 +43,7 @@ export const CompanySetup = ({ userId }: { userId: string }) => {
     try {
       await updateCompanyProfile(userId, { company_name: name.trim(), bio: bio.trim() || null, website: website.trim() || null });
       await setCompanyCategories(company.id, selectedCategories);
-      await setCompanyServiceAreas(company.id, selectedAreas.map(key => { const [city, province] = key.split('|'); return { city, province }; }));
+      await setCompanyServiceAreas(company.id, selectedAreas);
       setMessage('Profilo aziendale aggiornato.');
     } catch (err: any) { setError(err.message); } finally { setSaving(false); }
   };
@@ -50,7 +53,7 @@ export const CompanySetup = ({ userId }: { userId: string }) => {
       <div className="grid gap-4 sm:grid-cols-2"><Input label="Nome azienda" value={name} onChange={event=>setName(event.target.value)} required/><Input label="Sito web" value={website} onChange={event=>setWebsite(event.target.value)} placeholder="https://"/></div>
       <Textarea label="Presentazione aziendale" value={bio} onChange={event=>setBio(event.target.value)} rows={4}/>
       <ChoiceGrid title="Categorie di servizio" icon={<Wrench size={17}/>} items={categories.map(c=>({value:c.id,label:c.name}))} selected={selectedCategories} onToggle={value=>toggle(value,setSelectedCategories)}/>
-      <ChoiceGrid title="Comuni / zone operative" icon={<MapPin size={17}/>} items={locations.map(l=>({value:`${l.city}|${l.province}`,label:`${l.city} (${l.province})`}))} selected={selectedAreas} onToggle={value=>toggle(value,setSelectedAreas)}/>
+      <MunicipalityMultiSelect values={selectedAreas} onChange={setSelectedAreas} required/>
       {(selectedCategories.length===0||selectedAreas.length===0)&&<p className="rounded-2xl bg-amber-50 p-4 text-xs font-semibold text-amber-700">Seleziona almeno una categoria e un comune per ricevere richieste compatibili.</p>}
       <Button fullWidth size="lg" disabled={saving}>{saving?'Salvataggio…':<><Check size={17}/> Salva configurazione aziendale</>}</Button>
     </form>

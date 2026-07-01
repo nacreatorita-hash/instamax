@@ -18,6 +18,7 @@ import {
   type SmartRequestDraft,
 } from '../lib/smart-request';
 import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
+import { findMunicipalityByLegacyLocation } from '../lib/municipalities';
 
 export const SmartRequestAssistant = ({
   categories,
@@ -106,12 +107,16 @@ export const SmartRequestAssistant = ({
 
     setPublishing(true);
     try {
+      const municipality = await findMunicipalityByLegacyLocation(draft.city, draft.province);
+      if (!municipality) throw new Error('Seleziona un comune valido nel modulo manuale prima di pubblicare.');
       const created = await createServiceRequest(user.id, {
         title: draft.suggestedTitle,
         description: draft.suggestedDescription,
         category_id: draft.categoryId,
-        city: draft.city,
-        province: draft.province,
+        municipality_code: municipality.code,
+        city: municipality.name,
+        province_code: municipality.provinceCode,
+        province: municipality.provinceName,
         urgency: mapGeminiUrgencyToRequestUrgency(draft.suggestedUrgency),
         budget: null,
       });

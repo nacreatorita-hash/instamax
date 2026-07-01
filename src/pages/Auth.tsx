@@ -6,6 +6,8 @@ import { getRedirectPath } from '../lib/auth/roleRedirect';
 import { PENDING_REQUEST_KEY } from '../lib/smart-request';
 import { APP_ROUTES, navigateTo } from '../lib/navigation';
 import { Button, Input, Select, Textarea, Card } from '../components/UI';
+import { MunicipalityAutocomplete } from '../components/MunicipalityAutocomplete';
+import type { Municipality } from '../lib/municipalities';
 
 export const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -20,8 +22,7 @@ export const Auth: React.FC = () => {
   const [name, setName] = useState('');
   const [role, setRole] = useState<'client' | 'professional' | 'company' | 'candidate'>('client');
   const [phone, setPhone] = useState('');
-  const [city, setCity] = useState('');
-  const [province, setProvince] = useState('');
+  const [municipality, setMunicipality] = useState<Municipality | null>(null);
   const [bio, setBio] = useState('');
 
   // Form error & success states
@@ -61,6 +62,11 @@ export const Auth: React.FC = () => {
       setLoading(false);
       return;
     }
+    if (!isLogin && !municipality) {
+      setErrorMsg('Seleziona un comune valido dall’elenco.');
+      setLoading(false);
+      return;
+    }
     if (password.length < 6) {
       setErrorMsg('La password deve contenere almeno 6 caratteri.');
       setLoading(false);
@@ -86,7 +92,7 @@ export const Auth: React.FC = () => {
         }, 1000);
       } else {
         // Sign up user
-        const result = await signUp(email, password, name, role);
+        const result = await signUp(email, password, name, role, municipality);
         setSuccessMsg(result.session
           ? 'Registrazione completata! Accesso in corso…'
           : 'Account creato. Controlla la tua email per confermare la registrazione.');
@@ -220,25 +226,7 @@ export const Auth: React.FC = () => {
                   disabled={loading}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Città"
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="es. Salerno"
-                    disabled={loading}
-                  />
-                  <Input
-                    label="Provincia"
-                    type="text"
-                    value={province}
-                    onChange={(e) => setProvince(e.target.value)}
-                    placeholder="es. SA"
-                    maxLength={2}
-                    disabled={loading}
-                  />
-                </div>
+                <MunicipalityAutocomplete value={municipality} onChange={setMunicipality} label="Comune" required disabled={loading}/>
 
                 <Textarea
                   label="Breve Bio / Presentazione"

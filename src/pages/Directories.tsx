@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, ArrowLeft, BriefcaseBusiness, ChevronRight, MapPin, Search, ShieldCheck } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Avatar, Badge, Button, Card, RatingStars } from '../components/UI';
+import { MunicipalityAutocomplete } from '../components/MunicipalityAutocomplete';
+import type { Municipality } from '../lib/municipalities';
 import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
 import { supabase } from '../lib/supabase/client';
 import type { PricingMode } from '../lib/supabase/types';
@@ -18,10 +20,10 @@ type DirectoryProfessional = {
   hourly_rate: number | null;
   profiles: { full_name: string; avatar_url: string | null; city: string | null; province: string | null } | null;
   professional_categories: Array<{ categories: { name: string } | null }>;
-  service_areas: Array<{ city: string; province: string }>;
+  service_areas: Array<{ municipality_code: string | null; city: string; province_code: string | null; province: string }>;
 };
 
-const professionalSelect = 'id,business_name,bio,years_experience,verified,rating,total_reviews,pricing_mode,hourly_rate,profiles!professional_profiles_user_id_fkey(full_name,avatar_url,city,province),professional_categories(categories(name)),service_areas(city,province)';
+const professionalSelect = 'id,business_name,bio,years_experience,verified,rating,total_reviews,pricing_mode,hourly_rate,profiles!professional_profiles_user_id_fkey(full_name,avatar_url,city,province),professional_categories(categories(name)),service_areas(municipality_code,city,province_code,province)';
 
 const displayName = (item: DirectoryProfessional) => item.business_name || item.profiles?.full_name || 'Professionista instaMax';
 
@@ -45,7 +47,7 @@ const ProfessionalList = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState<DirectoryProfessional[]>([]);
   const [query, setQuery] = useState('');
-  const [city, setCity] = useState('all');
+  const [municipality, setMunicipality] = useState<Municipality | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -63,11 +65,10 @@ const ProfessionalList = () => {
     })();
   }, []);
 
-  const cities = useMemo(() => Array.from(new Set(items.flatMap(item => item.service_areas.map(area => area.city)))).sort(), [items]);
   const filtered = useMemo(() => items.filter(item => {
     const haystack = `${item.profiles?.full_name ?? ''} ${item.business_name ?? ''} ${item.professional_categories.map(row => row.categories?.name ?? '').join(' ')}`.toLowerCase();
-    return (!query.trim() || haystack.includes(query.trim().toLowerCase())) && (city === 'all' || item.service_areas.some(area => area.city === city));
-  }), [items, query, city]);
+    return (!query.trim() || haystack.includes(query.trim().toLowerCase())) && (!municipality || item.service_areas.some(area => area.municipality_code ? area.municipality_code === municipality.code : area.city === municipality.name));
+  }), [items, query, municipality]);
 
   const openProfile = (professionalId: string) => navigateTo(navigate, buildAppRoute(`/professionals/${professionalId}`));
 
@@ -76,7 +77,7 @@ const ProfessionalList = () => {
     <main className="mx-auto max-w-7xl space-y-6 p-5 md:p-8">
       <div className="grid gap-3 rounded-3xl border border-zinc-100 bg-white p-4 md:grid-cols-[1fr_240px]">
         <div className="relative"><Search className="absolute left-4 top-3.5 text-zinc-400" size={17}/><input className="w-full rounded-2xl bg-zinc-50 py-3 pl-11 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-100" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nome, attività o categoria"/></div>
-        <select className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm font-semibold" value={city} onChange={event => setCity(event.target.value)}><option value="all">Tutti i comuni</option>{cities.map(value => <option key={value}>{value}</option>)}</select>
+        <MunicipalityAutocomplete value={municipality} onChange={setMunicipality} label="" placeholder="Filtra per comune"/>
       </div>
       {error && <p className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</p>}
       {loading ? <p className="py-14 text-center text-sm text-zinc-400">Caricamento professionisti…</p> : filtered.length ?

@@ -24,6 +24,8 @@ import { CompanySetup } from '../components/CompanySetup';
 import { PricingSettings } from '../components/PricingSettings';
 import { APP_ROUTES, navigateTo } from '../lib/navigation';
 import { supabase } from '../lib/supabase/client';
+import { MunicipalityAutocomplete } from '../components/MunicipalityAutocomplete';
+import { findMunicipalityByLegacyLocation, type Municipality } from '../lib/municipalities';
 
 // === USER PROFILE VIEW ===
 export const Profile: React.FC = () => {
@@ -40,6 +42,7 @@ export const Profile: React.FC = () => {
   const [phone, setPhone] = useState(currentProfile.phone);
   const [city, setCity] = useState(currentProfile.city);
   const [province, setProvince] = useState(currentProfile.province);
+  const [municipality, setMunicipality] = useState<Municipality | null>(null);
   const [avatarUrl, setAvatarUrl] = useState(currentProfile.avatar);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -55,6 +58,7 @@ export const Profile: React.FC = () => {
       setCity(profile.city || '');
       setProvince(profile.province || '');
       setAvatarUrl(profile.avatar_url || '');
+      void findMunicipalityByLegacyLocation(profile.city, profile.province).then(setMunicipality);
     }
   }, [profile]);
 
@@ -70,8 +74,10 @@ export const Profile: React.FC = () => {
         await updateUserProfile({
           full_name: name,
           phone: phone || null,
-          city: city || null,
-          province: province || null,
+          municipality_code: municipality?.code ?? null,
+          city: municipality?.name ?? null,
+          province_code: municipality?.provinceCode ?? null,
+          province: municipality?.provinceName ?? null,
           avatar_url: avatarUrl || null
         });
 
@@ -80,7 +86,7 @@ export const Profile: React.FC = () => {
           name,
           email,
           phone,
-          location: city ? `${city} (${province})` : '',
+          location: municipality ? `${municipality.name} (${municipality.provinceCode})` : '',
           avatar: avatarUrl
         });
       }
@@ -193,23 +199,7 @@ export const Profile: React.FC = () => {
                 onChange={(e) => setPhone(e.target.value)}
                 disabled={loading}
               />
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  label="Città"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-                <Input
-                  label="Provincia"
-                  value={province}
-                  onChange={(e) => setProvince(e.target.value)}
-                  required
-                  maxLength={2}
-                  disabled={loading}
-                />
-              </div>
+              <MunicipalityAutocomplete value={municipality} onChange={value => { setMunicipality(value); setCity(value?.name ?? ''); setProvince(value?.provinceName ?? ''); }} label="Comune" required disabled={loading}/>
             </div>
 
             <div>

@@ -1,5 +1,6 @@
 import { supabase } from './supabase/client';
 import type { ProfessionalProfile } from './supabase/types';
+import type { Municipality } from './municipalities';
 
 export async function getProfessionalProfile(userId: string) {
   const { data, error } = await supabase.from('professional_profiles').select('*').eq('user_id', userId).single();
@@ -33,18 +34,18 @@ export async function setProfessionalCategories(professionalId: string, category
 }
 
 export async function getServiceAreas(professionalId: string) {
-  const { data, error } = await supabase.from('service_areas').select('city,province')
+  const { data, error } = await supabase.from('service_areas').select('municipality_code,city,province_code,province')
     .eq('professional_id', professionalId).order('city');
   if (error) throw error;
-  return (data ?? []) as Array<{ city: string; province: string }>;
+  return data ?? [];
 }
 
-export async function setServiceAreas(professionalId: string, areas: Array<{ city: string; province: string }>) {
+export async function setServiceAreas(professionalId: string, areas: Municipality[]) {
   const { error: deleteError } = await supabase.from('service_areas').delete().eq('professional_id', professionalId);
   if (deleteError) throw deleteError;
   if (!areas.length) return;
   const { error } = await supabase.from('service_areas').insert(
-    areas.map(area => ({ professional_id: professionalId, city: area.city, province: area.province }))
+    areas.map(area => ({ professional_id: professionalId, municipality_code: area.code, city: area.name, province_code: area.provinceCode, province: area.provinceName }))
   );
   if (error) throw error;
 }

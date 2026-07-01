@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../supabase/client';
 import type { Profile, Subscription, UserRole } from '../supabase/types';
+import type { Municipality } from '../municipalities';
 import { getRedirectPath } from './roleRedirect';
 import { PENDING_REQUEST_KEY } from '../smart-request';
 import { APP_ROUTES, buildAppRoute } from '../navigation';
@@ -22,7 +23,7 @@ export interface AuthContextType {
   subscription: Subscription | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<any>;
+  signUp: (email: string, password: string, fullName: string, role: UserRole, municipality?: Municipality | null) => Promise<any>;
   signInWithGoogle: (role?: UserRole) => Promise<any>;
   signOut: () => Promise<void>;
   updateUserProfile: (profileData: Partial<Profile>) => Promise<Profile>;

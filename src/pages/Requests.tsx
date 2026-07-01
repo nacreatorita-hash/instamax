@@ -2,11 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, CheckCircle2, ImagePlus, LockKeyhole, Plus, Search, ShieldCheck, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, Card, Input, Select, Textarea } from '../components/UI';
+import { MunicipalityAutocomplete } from '../components/MunicipalityAutocomplete';
 import { RequestCard } from '../components/Cards';
 import { SmartRequestAssistant } from '../components/SmartRequestAssistant';
 import { useAuth } from '../lib/auth/useAuth';
 import { supabase } from '../lib/supabase/client';
-import type { Category, ItalianLocation, RequestStatus, RequestUrgency, ServiceRequest } from '../lib/supabase/types';
+import type { Category, RequestStatus, RequestUrgency, ServiceRequest } from '../lib/supabase/types';
+import type { Municipality } from '../lib/municipalities';
 import { createServiceRequest, getCompatibleRequestsForProvider, getRequestsForClient, subscribeToCompatibleRequests, uploadRequestMedia } from '../lib/requests';
 import { createRequestNotifications } from '../lib/notifications';
 import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
@@ -23,7 +25,6 @@ export const Requests: React.FC = () => {
   const location = useLocation();
   const isNew = location.pathname === '/requests/new';
   const [categories, setCategories] = useState<Category[]>([]);
-  const [locations, setLocations] = useState<ItalianLocation[]>([]);
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -37,7 +38,7 @@ export const Requests: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [cityKey, setCityKey] = useState('');
+  const [municipality, setMunicipality] = useState<Municipality | null>(null);
   const [urgency, setUrgency] = useState<RequestUrgency>('week');
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
@@ -47,12 +48,9 @@ export const Requests: React.FC = () => {
   useEffect(() => {
     void Promise.all([
       supabase.from('categories').select('*').eq('active', true).order('name'),
-      supabase.from('italian_locations').select('*').eq('active', true).order('city'),
-    ]).then(([categoryResult, locationResult]) => {
+    ]).then(([categoryResult]) => {
       if (categoryResult.error) throw categoryResult.error;
-      if (locationResult.error) throw locationResult.error;
       setCategories((categoryResult.data ?? []) as Category[]);
-      setLocations((locationResult.data ?? []) as ItalianLocation[]);
     }).catch(err => setError(err.message));
   }, []);
 
@@ -111,8 +109,7 @@ export const Requests: React.FC = () => {
     event.preventDefault();
     setError(''); setSuccess('');
     if (!user || profile?.role !== 'client') return setError('Solo un cliente autenticato può pubblicare richieste.');
-    const selectedLocation = locations.find(item => `${item.city}|${item.province}` === cityKey);
-    if (!title.trim() || !categoryId || !selectedLocation || !description.trim() || !urgency) {
+    if (!title.trim() || !categoryId || !municipality || !description.trim() || !urgency) {
       return setError('Completa tutti i campi obbligatori.');
     }
     const numericBudget = budget === '' ? null : Number(budget);
@@ -120,7 +117,8 @@ export const Requests: React.FC = () => {
     setPublishing(true);
     try {
       const created = await createServiceRequest(user.id, {
-        title, category_id: categoryId, city: selectedLocation.city, province: selectedLocation.province,
+        title, category_id: categoryId, municipality_code: municipality.code, city: municipality.name,
+        province_code: municipality.provinceCode, province: municipality.provinceName,
         urgency, description, budget: numericBudget,
       });
       if (files.length) await uploadRequestMedia(user.id, created.id, files);
@@ -158,7 +156,7 @@ export const Requests: React.FC = () => {
           <Input label="Titolo richiesta *" value={title} onChange={e=>setTitle(e.target.value)} maxLength={100} placeholder="Es. Cerco idraulico per perdita in cucina"/>
           <div className="grid gap-4 sm:grid-cols-2">
             <Select label="Categoria *" value={categoryId} onChange={e=>setCategoryId(e.target.value)} options={[{value:'',label:'Seleziona una categoria'},...categories.map(c=>({value:c.id,label:c.name}))]}/>
-            <Select label="Comune / zona *" value={cityKey} onChange={e=>setCityKey(e.target.value)} options={[{value:'',label:'Seleziona il comune'},...locations.map(l=>({value:`${l.city}|${l.province}`,label:`${l.city} (${l.province})`}))]}/>
+            <MunicipalityAutocomplete value={municipality} onChange={setMunicipality} label="Comune / zona" required/>
           </div>
           <div className="grid gap-4 sm:grid-cols-2"><Select label="Urgenza *" value={urgency} onChange={e=>setUrgency(e.target.value as RequestUrgency)} options={urgencyOptions}/><Input label="Budget indicativo (€)" type="number" min="0" step="0.01" value={budget} onChange={e=>setBudget(e.target.value)} placeholder="Facoltativo"/></div>
           <Textarea label="Descrizione *" value={description} onChange={e=>setDescription(e.target.value)} rows={6} maxLength={2000} placeholder="Spiega il problema, il risultato desiderato e ogni dettaglio utile…"/>

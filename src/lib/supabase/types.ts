@@ -11,6 +11,8 @@ export interface Profile {
   phone: string | null;
   avatar_url: string | null;
   city: string | null;
+  municipality_code: string | null;
+  province_code: string | null;
   province: string | null;
   created_at?: string;
   updated_at?: string;
@@ -116,6 +118,8 @@ export interface ServiceRequest {
   title: string;
   description: string;
   city: string;
+  municipality_code: string | null;
+  province_code: string | null;
   province: string;
   urgency: RequestUrgency;
   budget: number | null;

@@ -192,3 +192,29 @@ Il bucket è privato. I file sono salvati in `<client_id>/<request_id>/...`; nel
 npm run typecheck
 npm run build
 ```
+
+## Elenco ufficiale dei comuni italiani
+
+Autocomplete e ricerca usano il file statico `public/data/comuni-italiani.json`, generato dal CSV ufficiale ISTAT “Elenco dei comuni italiani”. L’app lo carica soltanto al primo utilizzo e lo conserva in memoria: durante la digitazione non vengono effettuate chiamate a Supabase o ISTAT.
+
+Per aggiornare il catalogo quando ISTAT pubblica variazioni territoriali:
+
+```bash
+npm run update:municipalities
+```
+
+Fonte predefinita: `https://www.istat.it/storage/codici-unita-amministrative/Elenco-comuni-italiani.csv`. È possibile verificare prima la data di aggiornamento nella pagina ISTAT “Codici delle unità amministrative”. Per usare un CSV ufficiale già scaricato:
+
+```bash
+node scripts/update-italian-municipalities.mjs --source ./Elenco-comuni-italiani.csv
+```
+
+Supabase non contiene l’intero catalogo: salva soltanto i comuni effettivamente scelti dagli utenti. La migrazione `supabase/20260702_istat_municipality_codes.sql` introduce il matching tramite codice ISTAT e conserva temporaneamente il confronto `city/province` per i dati storici.
+
+Per associare i record storici ai codici ISTAT, eseguire una sola volta lo script amministrativo con una service-role key temporanea, mai esposta al frontend o salvata nel repository:
+
+```bash
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/migrate-existing-municipality-codes.mjs
+```
+
+I record non associabili automaticamente vengono registrati in `municipality_migration_issues` per la revisione manuale.

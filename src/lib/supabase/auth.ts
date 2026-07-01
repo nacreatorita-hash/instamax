@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from './client';
 import type { Profile, UserRole } from './types';
+import type { Municipality } from '../municipalities';
 
 const requireSupabase = () => {
   if (!isSupabaseConfigured) {
@@ -12,7 +13,8 @@ export async function signUpWithEmail(
   email: string,
   password: string,
   fullName: string,
-  role: UserRole
+  role: UserRole,
+  municipality?: Municipality | null,
 ) {
   requireSupabase();
   const normalizedEmail = email.trim().toLowerCase();
@@ -24,6 +26,10 @@ export async function signUpWithEmail(
       data: {
         full_name: normalizedName,
         role,
+        municipality_code: municipality?.code ?? null,
+        city: municipality?.name ?? null,
+        province_code: municipality?.provinceCode ?? null,
+        province: municipality?.provinceName ?? null,
       }
     }
   });
@@ -34,7 +40,8 @@ export async function signUpWithEmail(
   // atomically by public.handle_new_user() in schema.sql.
   const profile: Profile = {
     id: user.id, role, full_name: normalizedName, email: normalizedEmail,
-    phone: null, avatar_url: null, city: null, province: null,
+    phone: null, avatar_url: null, municipality_code: municipality?.code ?? null, city: municipality?.name ?? null,
+    province_code: municipality?.provinceCode ?? null, province: municipality?.provinceName ?? null,
   };
   return { user, session: data.session, profile };
 }

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Bookmark, Car, MapPin, MessageCircle, Search } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Badge, Button, Card } from '../components/UI';
+import { MunicipalityAutocomplete } from '../components/MunicipalityAutocomplete';
+import type { Municipality } from '../lib/municipalities';
 import { useAuth } from '../lib/auth/useAuth';
 import { getCandidateById, getCandidateProfile, getPublicCandidates, saveCandidate } from '../lib/candidates';
 import { getOrCreateCandidateConversation } from '../lib/chat';
@@ -17,6 +19,7 @@ const List = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState<any[]>([]);
   const [query, setQuery] = useState('');
+  const [municipality, setMunicipality] = useState<Municipality | null>(null);
 
   useEffect(() => {
     void (profile?.role === 'candidate' && user
@@ -31,12 +34,12 @@ const List = () => {
   const filtered = items.filter(candidate =>
     `${candidate.main_job_title} ${(candidate.skills ?? []).join(' ')} ${candidate.city}`
       .toLowerCase()
-      .includes(query.toLowerCase()),
+      .includes(query.toLowerCase()) && (!municipality || (candidate.municipality_code ? candidate.municipality_code === municipality.code : candidate.city === municipality.name)),
   );
 
   return (
     <Page title="Candidati" subtitle="Curriculum digitali per i mestieri della tua zona">
-      <div className="relative">
+      <div className="grid gap-3 md:grid-cols-[1fr_320px]"><div className="relative">
         <Search className="absolute left-4 top-3.5 text-zinc-400" size={17} />
         <input
           value={query}
@@ -44,7 +47,7 @@ const List = () => {
           placeholder="Cerca mestiere, competenza o comune"
           className="w-full rounded-2xl bg-white py-3 pl-11 pr-4 text-sm"
         />
-      </div>
+      </div><MunicipalityAutocomplete value={municipality} onChange={setMunicipality} label="" placeholder="Filtra per comune"/></div>
 
       {filtered.length ? (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
