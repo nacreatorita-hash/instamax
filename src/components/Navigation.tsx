@@ -25,6 +25,7 @@ import { APP_ROUTES, buildAppRoute, navigateTo } from '../lib/navigation';
 // === NOTIFICATION BELL ===
 export const NotificationBell: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -43,6 +44,27 @@ export const NotificationBell: React.FC = () => {
   }, [user?.id]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const openNotification = async (notification: Notification) => {
+    try {
+      if (!notification.read) await markNotificationAsRead(notification.id);
+    } catch (error) {
+      console.warn('Impossibile segnare la notifica come letta:', error);
+    }
+
+    setIsOpen(false);
+    if (notification.request_id) {
+      navigateTo(navigate, buildAppRoute(`/requests/${notification.request_id}`));
+      return;
+    }
+    if (notification.type.includes('job') || notification.type.includes('application')) {
+      navigateTo(navigate, APP_ROUTES.jobs);
+      return;
+    }
+    if (['new_message', 'location_shared', 'conversation_closed', 'candidate_contacted'].includes(notification.type)) {
+      navigateTo(navigate, APP_ROUTES.chat);
+    }
+  };
 
   return (
     <div className="relative">
@@ -82,10 +104,12 @@ export const NotificationBell: React.FC = () => {
                 </div>
               ) : (
                 notifications.map((notif) => (
-                  <div 
+                  <button
+                    type="button"
                     key={notif.id} 
-                    onClick={() => void markNotificationAsRead(notif.id).then(loadNotifications)}
-                    className={`p-3 rounded-2xl transition-colors cursor-pointer text-left ${notif.read ? 'bg-white hover:bg-zinc-50' : 'bg-zinc-50/70 hover:bg-zinc-50'}`}
+                    onClick={() => void openNotification(notif)}
+                    className={`w-full p-3 rounded-2xl transition-colors cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${notif.read ? 'bg-white hover:bg-zinc-50' : 'bg-zinc-50/70 hover:bg-zinc-50'}`}
+                    aria-label={`${notif.title}. ${notif.content}${notif.request_id ? '. Apri richiesta' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className={`text-xs font-semibold ${notif.read ? 'text-zinc-700' : 'text-zinc-950'}`}>
@@ -94,7 +118,8 @@ export const NotificationBell: React.FC = () => {
                       <span className="text-[9px] text-zinc-400 font-medium whitespace-nowrap">{new Date(notif.created_at).toLocaleDateString('it-IT')}</span>
                     </div>
                     <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2">{notif.content}</p>
-                  </div>
+                    {notif.request_id && <span className="mt-2 block text-[10px] font-black text-blue-600">Apri richiesta →</span>}
+                  </button>
                 ))
               )}
             </div>
