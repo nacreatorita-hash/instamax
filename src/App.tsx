@@ -132,6 +132,7 @@ function AppRoutes() {
         <Route path="/candidates" element={<ProtectedRoute><CandidatesDirectory /></ProtectedRoute>} />
         <Route path="/candidates/:id" element={<ProtectedRoute><CandidatesDirectory /></ProtectedRoute>} />
         <Route path="/professionals" element={<ProtectedRoute><ProfessionalsDirectory /></ProtectedRoute>} />
+        <Route path="/professionals/:id" element={<ProtectedRoute><ProfessionalsDirectory /></ProtectedRoute>} />
 
         {/* Chat System */}
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
